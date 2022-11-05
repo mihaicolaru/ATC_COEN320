@@ -19,7 +19,6 @@
 
 #define ONE_THOUSAND	1000
 #define ONE_MILLION		1000000
-/* offset and period are in microsends. */
 
 // message send definitions
 
@@ -92,111 +91,5 @@ public:
 	struct itimerspec timer;	// timer data structure
 	int coid;					// connection back to ourselves
 };
-
-//#include <sys/neutrino.h>
-//
-//typedef struct
-//{
-//	int message;  //DATA_REQUEST 1 , DATA_READY 2
-//}_message;
-//
-//typedef union
-//{
-//	_message msg;
-//	struct _pulse pulse;
-//}Message;
-//
-//#include <iostream>
-//#include <time.h>
-//#include <errno.h>
-//#include <sys/siginfo.h>
-//#include <sys/neutrino.h>
-//
-//#define ONE_THOUSAND	1000
-//#define ONE_MILLION		1000000
-///* offset and period are in microsends. */
-//
-//#define TIMERCODE 1
-//
-//class Timer
-//{
-//	private:
-//		int coid;                  //connection back to channel
-//		struct sigevent event;     //event to deliver
-//		struct itimerspec itime;   //timer's data struct
-//		timer_t timer_id;          //timer's ID for the timer
-//		sigset_t sigst;
-//
-//
-//	public:
-//		Timer() {};
-//
-//		Timer(int chid)
-//		{
-//				coid = ConnectAttach(0, 0, chid, 0, 0);   //Attach timer to our channel
-//				if (coid == -1)
-//				{
-//					std::cerr << "Timer: ConnectAttach ERROR :(" << std::endl;
-//					//exit(EXIT_FAILURE);
-//				}
-//				//initialization macro of the sigevent:"event" structure
-//				SIGEV_PULSE_INIT(&event, coid, SIGEV_PULSE_PRIO_INHERIT, TIMERCODE, 0);
-//				std::cout << "TIMER pulse initiated" << std::endl;
-//
-//		}
-//		~Timer()
-//		{
-//			  //cout << "TIMER Destructor called" << endl;
-//		}
-//
-//		int setTimer(uint64_t offset, int period) {
-//			struct itimerspec timer_spec;
-//			struct sigevent sigev;
-//			timer_t timer;
-//			const int signal = SIGALRM;
-//			int res;
-//
-//			/* set timer parameters */
-//			timer_spec.it_value.tv_sec = offset / ONE_MILLION;
-//			timer_spec.it_value.tv_nsec = (offset % ONE_MILLION) * ONE_THOUSAND;
-//			timer_spec.it_interval.tv_sec = period / ONE_MILLION;
-//			timer_spec.it_interval.tv_nsec = (period % ONE_MILLION) * ONE_THOUSAND;
-//
-//			sigemptyset(&sigst); // initialize a signal set
-//			sigaddset(&sigst, signal); // add SIGALRM to the signal set
-//			sigprocmask(SIG_BLOCK, &sigst, NULL); //block the signal
-//
-//			/* set the signal event a timer expiration */
-//			memset(&sigev, 0, sizeof(struct sigevent));
-//			sigev.sigev_notify = SIGEV_SIGNAL;
-//			sigev.sigev_signo = signal;
-//
-//			/* create timer */
-//			res = timer_create(CLOCK_MONOTONIC, &sigev, &timer);
-//
-//			if (res < 0) {
-//				perror("Timer Create");
-//				exit(-1);
-//			}
-//
-//			/* activate the timer */
-//			return timer_settime(timer, 0, &timer_spec, NULL);
-//		}
-//
-//		void setTimer(long seconds, long nanoseconds)
-//		{
-//			//Will receive  pulse initially (the itime.it_value) and every
-//			//(the itime.it_interval)seconds thereafter
-//			itime.it_value.tv_sec = seconds;
-//			itime.it_value.tv_nsec = nanoseconds;
-//			itime.it_interval.tv_sec = seconds;
-//			itime.it_interval.tv_nsec = nanoseconds;
-//			timer_settime(timer_id, 0, &itime, NULL);    //0 for relative time
-//		}
-//};
-
-//=============================================================================
-
-
 
 #endif /* TIMER_H_ */
