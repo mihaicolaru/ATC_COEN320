@@ -57,7 +57,7 @@ public:
 	}
 
 	bool start(){
-		std::cout << "start called\n";
+//		std::cout << "start called\n";
 
 		return (pthread_create(&planeThread, &attr, updateStart, this) == 0);
 	}
@@ -67,12 +67,12 @@ public:
 	}
 
 	static void *updateStart(void *context){
-		std::cout << "updateStart called\n";
+//		std::cout << "updateStart called\n";
 		return ((Plane *)context)->updatePosition();
 	}
 
 	void* updatePosition(void){
-		std::cout << "start exec\n";
+//		std::cout << "start exec\n";
 		// update position every second from position and speed every second
 		int chid = ChannelCreate(0);
 		if(chid == -1){
@@ -94,7 +94,7 @@ public:
 				for(int i = 0; i < 3; i++){
 					position[i] = position[i] + speed[i];
 				}
-				std::cout << "plane: " << ID << "\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+				std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 			}
 //			std::cout << "executing end\n";
 		}

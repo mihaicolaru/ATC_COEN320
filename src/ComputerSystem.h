@@ -46,12 +46,21 @@ public:
 
 		std::string separator = " ";
 
+		int pos[3];
+		int vel[3];
+
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
 			std::cout << ID << separator << arrivalTime << separator << arrivalCordX << separator << arrivalCordY << separator << arrivalCordZ << separator << arrivalSpeedX << separator << arrivalCordY << separator << arrivalSpeedZ << std::endl;
 			// create variables from inputs
-
+			pos[0] = arrivalCordX;
+			pos[1] = arrivalCordY;
+			pos[2] = arrivalCordZ;
+			vel[0] = arrivalCordX;
+			vel[1] = arrivalCordY;
+			vel[2] = arrivalCordZ;
+			Plane plane(arrivalTime, ID, pos, vel);
 		}
 
 		return 0;
@@ -80,6 +89,7 @@ private:
 	std::vector<Plane> planes;
 	std::vector<Plane> airspace;
 
+	int lasIndex;	// index of last plane in airspace
 	// plane position matrix
 	// ptr to radar (1 and 2)
 	// ptr to comm
