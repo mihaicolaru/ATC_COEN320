@@ -10,6 +10,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <pthread.h>
 #include <stdio.h>
 #include <errno.h>
@@ -17,10 +18,19 @@
 #include <sys/neutrino.h>
 
 #include "Timer.h"
+#include "Limits"
 
 
 #define OFFSET 1000000
 #define PERIOD 1000000
+
+#define SPACE_X_MIN 0
+#define SPACE_X_MAX 100000
+#define SPACE_Y_MIN 0
+#define SPACE_Y_MAX 100000
+#define SPACE_Z_MIN 0
+#define SPACE_Z_MAX 25000
+#define SPACE_ELEVATION 15000
 
 class Plane {
 public:
@@ -66,8 +76,10 @@ public:
 	}
 
 	bool stop(){
+
+		pthread_join(planeThread, NULL);
 		logfile.close();
-		return pthread_join(planeThread, NULL);
+		return 0;
 	}
 
 	static void *updateStart(void *context){
@@ -83,6 +95,8 @@ public:
 			std::cout << "couldn't create channel!\n";
 		}
 
+		logfile << "plane " << ID << " started:\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+
 		Timer timer(chid);
 		timer.setTimer(arrivalTime * 1000000, PERIOD);
 
@@ -90,15 +104,30 @@ public:
 		Message msg;
 
 		while(1) {
-			std::cout << "executing start\n";
+//			std::cout << "executing start\n";
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
-//			std::cout << rcvid << std::endl;
+			std::cout << rcvid << std::endl;
 
 			if(rcvid == 0){
 				for(int i = 0; i < 3; i++){
 					position[i] = position[i] + speed[i];
 				}
 
+				if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+					ChannelDestroy(chid);
+					break;
+				}
+				if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
+					ChannelDestroy(chid);
+					break;
+				}
+				if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
+					ChannelDestroy(chid);
+					break;
+				}
+//				std::cout << "executing\n";
+//				std::unique_lock<std::mutex> lock(mutex);
+				std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 				logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 			}
 //			std::cout << "executing end\n";
@@ -129,6 +158,7 @@ private:
 	pthread_t planeThread;
 	pthread_attr_t attr;
 	std::ofstream logfile;
+	std::mutex mutex;
 };
 
 

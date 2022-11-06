@@ -67,12 +67,12 @@ public:
 			p = &plane;
 			planes.push_back(p);
 		}
-		std::cout << "number of planes: " << planes.size();
+		std::cout << "number of planes: " << planes.size() << std::endl;
 		return 0;
 	}
 
 	void start(){
-
+		// start scanning planes
 	}
 
 	void stop(){
