@@ -24,7 +24,7 @@
 class Plane {
 public:
 	// constructor
-	Plane(time_t _arrivalTime, int _ID, int _position[3], int _speed[3]){
+	Plane(int _arrivalTime, int _ID, int _position[3], int _speed[3]){
 		// initialize members
 		arrivalTime = _arrivalTime;
 		ID = _ID;
@@ -33,6 +33,7 @@ public:
 			speed[i] = _speed[i];
 		}
 
+		// set thread in detached state
 		int rc = pthread_attr_init(&attr);
 		if (rc){
 			printf("ERROR, RC from pthread_attr_init() is %d \n", rc);
@@ -46,6 +47,8 @@ public:
 		std::cout << "plane created\nposition: "
 				<< position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: "
 				<< speed[0] << ", " << speed[0] << ", " << speed[0] << "\n";
+
+		start();
 	}
 
 	// destructor
@@ -77,23 +80,23 @@ public:
 		}
 
 		Timer timer(chid);
-		timer.setTimer(OFFSET, PERIOD);
+		timer.setTimer(arrivalTime * 1000000, PERIOD);
 
 		int rcvid;
 		Message msg;
 
 		while(1) {
-			std::cout << "executing start\n";
+//			std::cout << "executing start\n";
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
-			std::cout << rcvid << std::endl;
+//			std::cout << rcvid << std::endl;
 
 			if(rcvid == 0){
 				for(int i = 0; i < 3; i++){
 					position[i] = position[i] + speed[i];
 				}
-				std::cout << "current position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+				std::cout << "plane: " << ID << "\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 			}
-			std::cout << "executing end\n";
+//			std::cout << "executing end\n";
 		}
 
 		ChannelDestroy(chid);
@@ -114,7 +117,7 @@ public:
 
 
 private:
-	time_t arrivalTime;
+	int arrivalTime;
 	int ID;
 	int position [3];
 	int speed [3];
