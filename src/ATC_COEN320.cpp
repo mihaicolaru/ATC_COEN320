@@ -16,6 +16,8 @@ int main() {
 
 	ComputerSystem atc;
 
+	atc.stop();
+
 //	int arrivalTime1 = 3;
 //	int ID1 = 1;
 //	int position1[3] = {1, 5, 0};

@@ -19,6 +19,8 @@ public:
 	// construcor
 	ComputerSystem(){
 		initialize();
+
+		start();
 	}
 
 	// destructor
@@ -27,6 +29,7 @@ public:
 	}
 
 	int initialize(){
+		// start timer here for comparing with arrival time
 		readInput();
 
 		return 0;
@@ -57,17 +60,27 @@ public:
 			pos[0] = arrivalCordX;
 			pos[1] = arrivalCordY;
 			pos[2] = arrivalCordZ;
-			vel[0] = arrivalCordX;
-			vel[1] = arrivalCordY;
-			vel[2] = arrivalCordZ;
-			Plane plane(arrivalTime, ID, pos, vel);
+			vel[0] = arrivalSpeedX;
+			vel[1] = arrivalSpeedY;
+			vel[2] = arrivalSpeedZ;
+			Plane plane(arrivalTime, ID, pos, vel), *p;
+			p = &plane;
+			planes.push_back(p);
 		}
-
+		std::cout << "number of planes: " << planes.size();
 		return 0;
 	}
 
 	void start(){
 
+	}
+
+	void stop(){
+		for(Plane* plane : planes){
+			if(!planes.empty()){
+				plane->stop();
+			}
+		}
 	}
 
 	int deployPSR(){
@@ -86,8 +99,8 @@ public:
 	}
 
 private:
-	std::vector<Plane> planes;
-	std::vector<Plane> airspace;
+	std::vector<Plane*> planes;
+	std::vector<Plane*> airspace;
 
 	int lasIndex;	// index of last plane in airspace
 	// plane position matrix

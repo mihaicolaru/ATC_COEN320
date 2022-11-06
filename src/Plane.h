@@ -8,6 +8,7 @@
 #ifndef PLANE_H_
 #define PLANE_H_
 
+#include <fstream>
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -44,9 +45,11 @@ public:
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
 
-		std::cout << "plane created\nposition: "
-				<< position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: "
-				<< speed[0] << ", " << speed[0] << ", " << speed[0] << "\n";
+		std::string filename = "log_" + std::to_string(ID) + ".txt";
+
+		logfile.open(filename);
+
+		logfile << "plane created\nposition: " << position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: " << speed[0] << ", " << speed[1] << ", " << speed[2] << "\n";
 
 		start();
 	}
@@ -57,12 +60,13 @@ public:
 	}
 
 	bool start(){
-//		std::cout << "start called\n";
+		std::cout << "start called\n";
 
 		return (pthread_create(&planeThread, &attr, updateStart, this) == 0);
 	}
 
 	bool stop(){
+		logfile.close();
 		return pthread_join(planeThread, NULL);
 	}
 
@@ -86,7 +90,7 @@ public:
 		Message msg;
 
 		while(1) {
-//			std::cout << "executing start\n";
+			std::cout << "executing start\n";
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 //			std::cout << rcvid << std::endl;
 
@@ -94,7 +98,8 @@ public:
 				for(int i = 0; i < 3; i++){
 					position[i] = position[i] + speed[i];
 				}
-				std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+
+				logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 			}
 //			std::cout << "executing end\n";
 		}
@@ -123,6 +128,7 @@ private:
 	int speed [3];
 	pthread_t planeThread;
 	pthread_attr_t attr;
+	std::ofstream logfile;
 };
 
 
