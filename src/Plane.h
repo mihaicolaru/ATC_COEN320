@@ -83,12 +83,12 @@ public:
 	}
 
 	static void *updateStart(void *context){
-//		std::cout << "updateStart called\n";
+		//		std::cout << "updateStart called\n";
 		return ((Plane *)context)->updatePosition();
 	}
 
 	void* updatePosition(void){
-//		std::cout << "start exec\n";
+		//		std::cout << "start exec\n";
 		// update position every second from position and speed every second
 		int chid = ChannelCreate(0);
 		if(chid == -1){
@@ -103,34 +103,41 @@ public:
 		int rcvid;
 		Message msg;
 
+		bool start = true;
+
 		while(1) {
-//			std::cout << "executing start\n";
-			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
-			std::cout << rcvid << std::endl;
-
-			if(rcvid == 0){
-				for(int i = 0; i < 3; i++){
-					position[i] = position[i] + speed[i];
-				}
-
-				if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
-					ChannelDestroy(chid);
-					break;
-				}
-				if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
-					ChannelDestroy(chid);
-					break;
-				}
-				if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
-					ChannelDestroy(chid);
-					break;
-				}
-//				std::cout << "executing\n";
-//				std::unique_lock<std::mutex> lock(mutex);
-				std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
-				logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+			if(start){
+				// first cycle, wait for arrival time
+				start = false;
 			}
-//			std::cout << "executing end\n";
+			else{
+				if(rcvid == 0){
+					for(int i = 0; i < 3; i++){
+						position[i] = position[i] + speed[i];
+					}
+
+					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+					//				std::cout << "executing\n";
+					//				std::unique_lock<std::mutex> lock(mutex);
+					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+				}
+				//			std::cout << "executing start\n";
+				rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+
+			}
+			//			std::cout << "executing end\n";
 		}
 
 		ChannelDestroy(chid);
