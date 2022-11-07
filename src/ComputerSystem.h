@@ -9,6 +9,7 @@
 #define COMPUTERSYSTEM_H_
 
 #include <vector>
+#include <list>
 #include <fstream>
 #include <time.h>
 
@@ -99,8 +100,8 @@ public:
 	}
 
 private:
-	std::vector<Plane*> planes;
-	std::vector<Plane*> airspace;
+	std::list<Plane*> planes;
+	std::list<Plane*> airspace;
 
 	int lasIndex;	// index of last plane in airspace
 	// plane position matrix
