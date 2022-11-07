@@ -18,10 +18,10 @@ int main() {
 
     atc.stop();
 
-	int arrivalTime1 = 3;
-	int ID1 = 1;
-	int position1[3] = {90000, 90000, 15000};
-	int speed1[3] = {1000, 1000, -1000};
+//	int arrivalTime1 = 3;
+//	int ID1 = 1;
+//	int position1[3] = {90000, 90000, 15000};
+//	int speed1[3] = {1000, 1000, -1000};
 
 //	int arrivalTime2 = 1;
 //	int ID2 = 2;
@@ -39,12 +39,12 @@ int main() {
 //	int speed4[3] = {2500, 400, 2000};
 
 
-	Plane plane1(arrivalTime1, ID1, position1, speed1);
+//	Plane plane1(arrivalTime1, ID1, position1, speed1);
 //	Plane plane2(arrivalTime2, ID2, position2, speed2);
 //	Plane plane3(arrivalTime3, ID3, position3, speed3);
 //	Plane plane4(arrivalTime4, ID4, position4, speed4);
 
-	plane1.stop();
+//	plane1.stop();
 //	plane2.stop();
 //	plane3.stop();
 //	plane4.stop();
