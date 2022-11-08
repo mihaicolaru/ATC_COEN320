@@ -17,7 +17,7 @@
 
 class ComputerSystem{
 public:
-	// construcor
+	// constructor
 	ComputerSystem(){
 		initialize();
 

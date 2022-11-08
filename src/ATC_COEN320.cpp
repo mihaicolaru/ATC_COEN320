@@ -10,13 +10,15 @@
 #include "ComputerSystem.h"
 
 #include "Plane.h"
-
+#include "Display.h"
 
 int main() {
 
-    ComputerSystem atc;
+    //ComputerSystem atc;
 
-    atc.stop();
+    //atc.stop();
+	Display testDisp;
+
 
 //	int arrivalTime1 = 3;
 //	int ID1 = 1;
