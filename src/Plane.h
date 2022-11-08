@@ -22,7 +22,7 @@
 
 
 #define OFFSET 1000000
-#define PERIOD 1000000
+#define PLANE_PERIOD 1000000
 
 #define SPACE_X_MIN 0
 #define SPACE_X_MAX 100000
@@ -98,7 +98,7 @@ public:
 		logfile << "plane " << ID << " started:\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 
 		Timer timer(chid);
-		timer.setTimer(arrivalTime * 1000000, PERIOD);
+		timer.setTimer(arrivalTime * 1000000, PLANE_PERIOD);
 
 		int rcvid;
 		Message msg;
@@ -116,27 +116,28 @@ public:
 						position[i] = position[i] + speed[i];
 					}
 
-					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
-						ChannelDestroy(chid);
-						break;
-					}
-					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
-						ChannelDestroy(chid);
-						break;
-					}
-					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
-						ChannelDestroy(chid);
-						break;
-					}
+					//					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+					//						ChannelDestroy(chid);
+					//						break;
+					//					}
+					//					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
+					//						ChannelDestroy(chid);
+					//						break;
+					//					}
+					//					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
+					//						ChannelDestroy(chid);
+					//						break;
+					//					}
 					//				std::cout << "executing\n";
 					//				std::unique_lock<std::mutex> lock(mutex);
 					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 				}
 				//			std::cout << "executing start\n";
-				rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+
 
 			}
+			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 			//			std::cout << "executing end\n";
 		}
 
@@ -145,9 +146,28 @@ public:
 		return 0;
 	}
 
-	int answerRadar(){
+	std::string answerRadar(){
+		// might need a mutex here, maybe not since only read
+
+
 		// return ID speed and position, per radar request
-		return 0;
+
+		std::string planeInfo, separator;
+		separator = " ";
+		planeInfo = ID + separator + arrivalTime +
+				separator + position[0] + separator + position[1] + separator + position[2] +
+				separator + speed[0] + separator + speed[1] + separator + speed[2];
+		//		int * planeInfo[8];
+		//
+		//		planeInfo[0] = ID;
+		//		planeInfo[1] = arrivalTime;
+		//		planeInfo[2] = position[0];
+		//		planeInfo[3] = position[1];
+		//		planeInfo[4] = position[2];
+		//		planeInfo[5] = speed[0];
+		//		planeInfo[6] = speed[1];
+		//		planeInfo[7] = speed[2];
+		return planeInfo;
 	}
 
 

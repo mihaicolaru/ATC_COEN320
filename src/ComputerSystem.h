@@ -14,6 +14,17 @@
 #include <time.h>
 
 #include "Plane.h"
+#include "Timer.h"
+
+#define SSR_PERIOD 5000000
+
+#define SPACE_X_MIN 0
+#define SPACE_X_MAX 100000
+#define SPACE_Y_MIN 0
+#define SPACE_Y_MAX 100000
+#define SPACE_Z_MIN 0
+#define SPACE_Z_MAX 25000
+#define SPACE_ELEVATION 15000
 
 class ComputerSystem{
 public:
@@ -30,8 +41,23 @@ public:
 	}
 
 	int initialize(){
-		// start timer here for comparing with arrival time
+
+		// initialize
+
 		readInput();
+
+		// set threads in detached state
+		int rc = pthread_attr_init(&attr);
+		if (rc){
+			printf("ERROR, RC from pthread_attr_init() is %d \n", rc);
+		}
+
+		rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+		if (rc){
+			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
+		}
+
+		// maybe separate reading file and initializing planes
 
 		return 0;
 	}
@@ -44,7 +70,7 @@ public:
 
 		if (!input_file_stream) {
 			std::cout << "Can't find file input.txt" << std::endl;
-		    return 1;
+			return 1;
 		}
 		int ID, arrivalTime, arrivalCordX, arrivalCordY, arrivalCordZ, arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ;
 
@@ -53,6 +79,7 @@ public:
 		int pos[3];
 		int vel[3];
 
+		// start timer here for comparing with arrival time
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
@@ -74,23 +101,90 @@ public:
 
 	void start(){
 		// start scanning planes
+		// set scheduling priority
+
+		std::cout << "cd start called\n";
+
+
+
 	}
 
 	void stop(){
-		for(Plane* plane : planes){
-			if(!planes.empty()){
-				plane->stop();
-			}
-		}
+		pthread_join(secondaryRadar, NULL);
+
+
 	}
 
 	int deployPSR(){
 		// run primary radar
+		for(Plane* plane : planes){
+			if(!planes.empty()){
+				airspace.push_back(plane);
+				planes.erase(plane);
+			}
+		}
 		return 0;
 	}
 
-	int deploySSR(){
+	friend void* SSR(){
 		// run secondary radar
+		int chid = ChannelCreate(0);
+		if(chid == -1){
+			std::cout <<"couldn't create channel\n";
+		}
+
+		Timer timer(chid);
+		timer.setTimer(0, SSR_PERIOD);
+
+		int rcvid;
+		Message msg;
+
+		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
+
+		while(1){
+			for(Plane* plane : airspace){
+				int * planeInfo = plane->answerRadar();
+				ID = planeInfo[0];
+				arrivalTime = planeInfo[1];
+				posX = planeInfo[2];
+				posY = planeInfo[3];
+				posZ = planeInfo[4];
+				velX = planeInfo[5];
+				velY = planeInfo[6];
+				velZ = planeInfo[7];
+
+				std::cout << "plane: " + ID +
+						"\nposition: " + posX + ", " + posY + ", " + posZ +
+						"\nspeed: " + velX + ", " + velY + ", " + velZ + "\n";
+
+				// store info somewhere for trajectory calculation
+
+				bool stop = false;
+
+				if(posX < SPACE_X_MIN || posX > SPACE_X_MAX){
+					// stop plane
+					stop = true;
+				}
+				if(posY < SPACE_Y_MIN || posY > SPACE_Y_MAX){
+					// stop plane
+					stop = true;
+				}
+				if(posZ < SPACE_Z_MIN || posZ > SPACE_Z_MAX){
+					// stop plane
+					stop = true;
+				}
+
+				if(stop){
+					plane->stop();
+				}
+
+			}
+
+			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+		}
+
+		ChannelDestroy(chid);
+
 		return 0;
 	}
 
@@ -103,7 +197,12 @@ private:
 	std::list<Plane*> planes;
 	std::list<Plane*> airspace;
 
-	int lasIndex;	// index of last plane in airspace
+	pthread_t primaryRadar;
+	pthread_t secondaryRadar;
+
+	pthread_attr_t attr;
+
+
 	// plane position matrix
 	// ptr to radar (1 and 2)
 	// ptr to comm
