@@ -12,13 +12,14 @@
 #include <list>
 #include <fstream>
 #include <time.h>
-
+#include <chrono>
 #include "Plane.h"
 
 class ComputerSystem{
 public:
 	// construcor
 	ComputerSystem(){
+
 		initialize();
 
 		start();
@@ -44,7 +45,7 @@ public:
 
 		if (!input_file_stream) {
 			std::cout << "Can't find file input.txt" << std::endl;
-		    return 1;
+			return 1;
 		}
 		int ID, arrivalTime, arrivalCordX, arrivalCordY, arrivalCordZ, arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ;
 
@@ -53,11 +54,15 @@ public:
 		int pos[3];
 		int vel[3];
 
+		time (&at);
+		std::cout << "Timer start\n";
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
 			std::cout << ID << separator << arrivalTime << separator << arrivalCordX << separator << arrivalCordY << separator << arrivalCordZ << separator << arrivalSpeedX << separator << arrivalCordY << separator << arrivalSpeedZ << std::endl;
 			// create variables from inputs
+
+
 			pos[0] = arrivalCordX;
 			pos[1] = arrivalCordY;
 			pos[2] = arrivalCordZ;
@@ -79,13 +84,22 @@ public:
 	void stop(){
 		for(Plane* plane : planes){
 			if(!planes.empty()){
+				//et = std::chrono::steady_clock::now();
+				//std::cout << "Plane: "  << " finished in: " << std::chrono::duration_cast<std::chrono::microseconds>(et-at).count()/CLOCKS_PER_SEC << std::endl;
+
 				plane->stop();
+				time (&et);
+				double exe = difftime(et,at);
+				std::cout << "finished in: " << exe;
 			}
 		}
 	}
 
 	int deployPSR(){
 		// run primary radar
+		//call clock current
+		//at = std::chrono::steady_clock::now();
+		//time (&at);
 		return 0;
 	}
 
@@ -102,7 +116,10 @@ public:
 private:
 	std::list<Plane*> planes;
 	std::list<Plane*> airspace;
-
+	//std::chrono::steady_clock::time_point at;
+	//std::chrono::steady_clock::time_point et;
+	time_t at;
+	time_t et;
 	int lasIndex;	// index of last plane in airspace
 	// plane position matrix
 	// ptr to radar (1 and 2)
