@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <sys/siginfo.h>
 #include <sys/neutrino.h>
+#include <time.h>
 
 #include "Timer.h"
 #include "Limits"
@@ -63,23 +64,26 @@ public:
 		logfile << "plane created\nposition: " << position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: " << speed[0] << ", " << speed[1] << ", " << speed[2] << "\n";
 
 		start();
+
 	}
 
 	// destructor
 	~Plane(){
-
 	}
 
 	bool start(){
 		std::cout << "start called\n";
-
+//		time(&at);
 		return (pthread_create(&planeThread, &attr, updateStart, this) == 0);
+
+		pthread_join(planeThread, NULL);
 	}
 
 	bool stop(){
 
-		pthread_join(planeThread, NULL);
+//		pthread_join(planeThread, NULL);
 		logfile.close();
+
 		return 0;
 	}
 
@@ -119,23 +123,21 @@ public:
 
 					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
 						ChannelDestroy(chid);
-						break;
+						return 0;
 					}
 					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
 						ChannelDestroy(chid);
-						break;
+						return 0;
 					}
 					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
 						ChannelDestroy(chid);
-						break;
+						return 0;
 					}
 //					std::cout << "executing\n";
 					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+
 				}
-				//			std::cout << "executing start\n";
-
-
 			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 			//			std::cout << "executing end\n";
@@ -192,6 +194,8 @@ private:
 	pthread_attr_t attr;
 	std::ofstream logfile;
 	std::mutex mutex;
+	time_t at;
+	time_t et;
 };
 
 

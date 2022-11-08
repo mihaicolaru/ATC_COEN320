@@ -36,6 +36,7 @@ class ComputerSystem{
 public:
 	// construcor
 	ComputerSystem(){
+
 		initialize();
 
 		start();
@@ -86,11 +87,16 @@ public:
 		int vel[3];
 
 		// start timer here for comparing with arrival time
+		time (&at);
+		std::cout << "Timer start\n";
+
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
 			std::cout << ID << separator << arrivalTime << separator << arrivalCordX << separator << arrivalCordY << separator << arrivalCordZ << separator << arrivalSpeedX << separator << arrivalSpeedY << separator << arrivalSpeedZ << std::endl;
 			// create variables from inputs
+
+
 			pos[0] = arrivalCordX;
 			pos[1] = arrivalCordY;
 			pos[2] = arrivalCordZ;
@@ -115,23 +121,27 @@ public:
 
 		pthread_create(&secondaryRadar, &attr, startSSR, this);
 
-
 	}
 
 	void stop(){
+
+
 		for(Plane* plane : planes){
 			if(!planes.empty()){
 				// do this when t_arrival < t_current
 				plane->stop();
+				time (&et);
+				double exe = difftime(et,at);
+				std::cout << "finished in: " << exe << "\n";	// plane total time
 			}
 			else{
 				break;
 			}
 		}
 
+
 		pthread_join(primaryRadar, NULL);
 		pthread_join(secondaryRadar, NULL);
-
 	}
 
 	static void* startPSR(void *context){
@@ -155,31 +165,31 @@ public:
 
 		//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
 
-		while(1){
+		int i = 0;
+		while(i < 5){
 			std::cout << "executing PSR\n";
-			int i = 0;
+			i++;
 
 
 
-			for(Plane* plane : planes){
-				if(!planes.empty()){
-					// do this when t_arrival < t_current
-					airspace.push_back(plane);
-					planes.remove(plane);
-					i++;
-				}
-				else{
-					// stop PSR
-					ChannelDestroy(chid);
-
-					return 0;
-				}
-			}
+			//			for(Plane* plane : planes){
+			//				if(!planes.empty()){
+			//					// do this when t_arrival < t_current
+			//					airspace.push_back(plane);
+			//					planes.remove(plane);
+			//					i++;
+			//				}
+			//				else{
+			//					// stop PSR
+			//					ChannelDestroy(chid);
+			//
+			//					return 0;
+			//				}
+			//			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 		}
 
 		ChannelDestroy(chid);
-
 		return 0;
 	}
 
@@ -205,70 +215,73 @@ public:
 		//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
 
 
-		while(1){
+		int i = 0;
+		while(i < 5){
+			i++;
 			std::cout << "executing SSR\n";
-			for(Plane* plane : airspace){
-				if(!airspace.empty()){
-					int* planeInfo = plane->answerRadar();
 
-					std::cout << planeInfo;
-
-					//					for(int i = 0; i < (int*)planeInfo.size(); i++){
-					//						std::cout << ((int*)planeInfo[i]) << " ";
-					//					}
-
-					//					std::cout << "\n";
-
-					//					int i = 0;
-					//					while(token != NULL){
-					//						planeInfo[i] = itoa(token);
-					//						std::cout << planeInfo[i];
-					//						i++;
-					//					}
-					//
-					//					std::cout << planeInfo;
-					//					ID = planeInfo[0];
-					//					arrivalTime = planeInfo[1];
-					//					posX = planeInfo[2];
-					//					posY = planeInfo[3];
-					//					posZ = planeInfo[4];
-					//					velX = planeInfo[5];
-					//					velY = planeInfo[6];
-					//					velZ = planeInfo[7];
-					//
-					////					std::cout << "plane: " + ID +
-					////							"\nposition: " + posX + ", " + posY + ", " + posZ +
-					////							"\nspeed: " + velX + ", " + velY + ", " + velZ + "\n";
-					//
-					//					// store info somewhere for trajectory calculation
-					//
-					//					bool stop = false;
-					//
-					//					if(posX < SPACE_X_MIN || posX > SPACE_X_MAX){
-					//						// stop plane
-					//						stop = true;
-					//					}
-					//					if(posY < SPACE_Y_MIN || posY > SPACE_Y_MAX){
-					//						// stop plane
-					//						stop = true;
-					//					}
-					//					if(posZ < SPACE_Z_MIN || posZ > SPACE_Z_MAX){
-					//						// stop plane
-					//						stop = true;
-					//					}
-					//
-					//					if(stop){
-					//						plane->stop();
-					//					}
-
-				}
-				else{
-					// stop SSR
-					ChannelDestroy(chid);
-
-					return 0;
-				}
-			}
+			//			for(Plane* plane : airspace){
+			//				if(!airspace.empty()){
+			//					int* planeInfo = plane->answerRadar();
+			//
+			//					std::cout << planeInfo;
+			//
+			//										for(int i = 0; i < (int*)planeInfo.size(); i++){
+			//											std::cout << ((int*)planeInfo[i]) << " ";
+			//										}
+			//
+			//										std::cout << "\n";
+			//
+			//										int i = 0;
+			//										while(token != NULL){
+			//											planeInfo[i] = itoa(token);
+			//											std::cout << planeInfo[i];
+			//											i++;
+			//										}
+			//
+			//										std::cout << planeInfo;
+			//										ID = planeInfo[0];
+			//										arrivalTime = planeInfo[1];
+			//										posX = planeInfo[2];
+			//										posY = planeInfo[3];
+			//										posZ = planeInfo[4];
+			//										velX = planeInfo[5];
+			//										velY = planeInfo[6];
+			//										velZ = planeInfo[7];
+			//
+			//					//					std::cout << "plane: " + ID +
+			//					//							"\nposition: " + posX + ", " + posY + ", " + posZ +
+			//					//							"\nspeed: " + velX + ", " + velY + ", " + velZ + "\n";
+			//
+			//										// store info somewhere for trajectory calculation
+			//
+			//										bool stop = false;
+			//
+			//										if(posX < SPACE_X_MIN || posX > SPACE_X_MAX){
+			//											// stop plane
+			//											stop = true;
+			//										}
+			//										if(posY < SPACE_Y_MIN || posY > SPACE_Y_MAX){
+			//											// stop plane
+			//											stop = true;
+			//										}
+			//										if(posZ < SPACE_Z_MIN || posZ > SPACE_Z_MAX){
+			//											// stop plane
+			//											stop = true;
+			//										}
+			//
+			//										if(stop){
+			//											plane->stop();
+			//										}
+			//
+			//				}
+			//				else{
+			//					// stop SSR
+			////					ChannelDestroy(chid);
+			////
+			////					return 0;
+			//				}
+			//			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 		}
 
@@ -289,12 +302,13 @@ private:
 
 	std::list<Plane*> airspace;
 	std::list<Plane*>::iterator ait1, ait2;
+
 	pthread_t primaryRadar;
 	pthread_t secondaryRadar;
-
 	pthread_attr_t attr;
 
-
+	time_t at;
+	time_t et;
 	// plane position matrix
 	// ptr to radar (1 and 2)
 	// ptr to comm
