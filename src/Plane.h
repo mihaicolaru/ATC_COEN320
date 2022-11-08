@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <sys/siginfo.h>
 #include <sys/neutrino.h>
+#include <time.h>
 
 #include "Timer.h"
 #include "Limits"
@@ -62,16 +63,16 @@ public:
 		logfile << "plane created\nposition: " << position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: " << speed[0] << ", " << speed[1] << ", " << speed[2] << "\n";
 
 		start();
+
 	}
 
 	// destructor
 	~Plane(){
-
 	}
 
 	bool start(){
 		std::cout << "start called\n";
-
+//		time(&at);
 		return (pthread_create(&planeThread, &attr, updateStart, this) == 0);
 	}
 
@@ -79,6 +80,7 @@ public:
 
 		pthread_join(planeThread, NULL);
 		logfile.close();
+
 		return 0;
 	}
 
@@ -132,6 +134,9 @@ public:
 					//				std::unique_lock<std::mutex> lock(mutex);
 					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
+//					time(&et);
+//							double exe = difftime(et,at);
+//							std::cout << "finished in: " << exe << std::endl;
 				}
 				//			std::cout << "executing start\n";
 				rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
@@ -166,6 +171,8 @@ private:
 	pthread_attr_t attr;
 	std::ofstream logfile;
 	std::mutex mutex;
+	time_t at;
+	time_t et;
 };
 
 
