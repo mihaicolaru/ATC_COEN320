@@ -202,7 +202,7 @@ public:
 		int rcvid;
 		Message msg;
 
-//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
+		//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
 
 
 		while(1){
@@ -261,6 +261,12 @@ public:
 					//						plane->stop();
 					//					}
 
+				}
+				else{
+					// stop SSR
+					ChannelDestroy(chid);
+
+					return 0;
 				}
 			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
