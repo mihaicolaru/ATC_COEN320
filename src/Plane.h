@@ -8,6 +8,7 @@
 #ifndef PLANE_H_
 #define PLANE_H_
 
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -116,20 +117,19 @@ public:
 						position[i] = position[i] + speed[i];
 					}
 
-					//					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
-					//						ChannelDestroy(chid);
-					//						break;
-					//					}
-					//					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
-					//						ChannelDestroy(chid);
-					//						break;
-					//					}
-					//					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
-					//						ChannelDestroy(chid);
-					//						break;
-					//					}
-					//				std::cout << "executing\n";
-					//				std::unique_lock<std::mutex> lock(mutex);
+					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
+						ChannelDestroy(chid);
+						break;
+					}
+//					std::cout << "executing\n";
 					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
 				}
@@ -146,28 +146,34 @@ public:
 		return 0;
 	}
 
-	std::string answerRadar(){
+	int* answerRadar(){
 		// might need a mutex here, maybe not since only read
 
 
 		// return ID speed and position, per radar request
 
-		std::string planeInfo, separator;
-		separator = " ";
-		planeInfo = ID + separator + arrivalTime +
-				separator + position[0] + separator + position[1] + separator + position[2] +
-				separator + speed[0] + separator + speed[1] + separator + speed[2];
-		//		int * planeInfo[8];
+		//		char* planeInfo;
+		//		std::string separator;
+		//		separator = " ";
+		//		std::stringstream info;
+		//		info << ID << separator << arrivalTime << separator << position[0] << separator << position[1] << separator << position[2] << separator << speed[0]  << separator << speed[1]  << separator << speed[2];
 		//
-		//		planeInfo[0] = ID;
-		//		planeInfo[1] = arrivalTime;
-		//		planeInfo[2] = position[0];
-		//		planeInfo[3] = position[1];
-		//		planeInfo[4] = position[2];
-		//		planeInfo[5] = speed[0];
-		//		planeInfo[6] = speed[1];
-		//		planeInfo[7] = speed[2];
-		return planeInfo;
+		//		planeInfo = info.str();
+
+		int planeInfo[8];
+
+		planeInfo[0] = ID;
+		planeInfo[1] = arrivalTime;
+		planeInfo[2] = position[0];
+		planeInfo[3] = position[1];
+		planeInfo[4] = position[2];
+		planeInfo[5] = speed[0];
+		planeInfo[6] = speed[1];
+		planeInfo[7] = speed[2];
+
+		std::cout << &planeInfo[0];
+
+		return &planeInfo[0];
 	}
 
 

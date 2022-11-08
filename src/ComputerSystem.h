@@ -12,10 +12,16 @@
 #include <list>
 #include <fstream>
 #include <time.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/siginfo.h>
+#include <sys/neutrino.h>
 
 #include "Plane.h"
 #include "Timer.h"
 
+#define PSR_PERIOD 5000000
 #define SSR_PERIOD 5000000
 
 #define SPACE_X_MIN 0
@@ -83,7 +89,7 @@ public:
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
-			std::cout << ID << separator << arrivalTime << separator << arrivalCordX << separator << arrivalCordY << separator << arrivalCordZ << separator << arrivalSpeedX << separator << arrivalCordY << separator << arrivalSpeedZ << std::endl;
+			std::cout << ID << separator << arrivalTime << separator << arrivalCordX << separator << arrivalCordY << separator << arrivalCordZ << separator << arrivalSpeedX << separator << arrivalSpeedY << separator << arrivalSpeedZ << std::endl;
 			// create variables from inputs
 			pos[0] = arrivalCordX;
 			pos[1] = arrivalCordY;
@@ -103,83 +109,72 @@ public:
 		// start scanning planes
 		// set scheduling priority
 
-		std::cout << "cd start called\n";
+		std::cout << "cs start called\n";
 
+		pthread_create(&primaryRadar, &attr, startPSR, this);
+
+		pthread_create(&secondaryRadar, &attr, startSSR, this);
 
 
 	}
 
 	void stop(){
-		pthread_join(secondaryRadar, NULL);
-
-
-	}
-
-	int deployPSR(){
-		// run primary radar
 		for(Plane* plane : planes){
 			if(!planes.empty()){
-				airspace.push_back(plane);
-				planes.erase(plane);
+				// do this when t_arrival < t_current
+				plane->stop();
+			}
+			else{
+				break;
 			}
 		}
-		return 0;
+
+		pthread_join(primaryRadar, NULL);
+		pthread_join(secondaryRadar, NULL);
+
 	}
 
-	friend void* SSR(){
-		// run secondary radar
+	static void* startPSR(void *context){
+		std::cout << "starting PSR\n";
+		return ((ComputerSystem *)context)->PSR();
+	}
+
+	void* PSR(void){
+		// run primary radar
+		std::cout << "primary radar started\n";
 		int chid = ChannelCreate(0);
 		if(chid == -1){
 			std::cout <<"couldn't create channel\n";
 		}
 
 		Timer timer(chid);
-		timer.setTimer(0, SSR_PERIOD);
+		timer.setTimer(PSR_PERIOD, PSR_PERIOD);
 
 		int rcvid;
 		Message msg;
 
-		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
+		//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
 
 		while(1){
-			for(Plane* plane : airspace){
-				int * planeInfo = plane->answerRadar();
-				ID = planeInfo[0];
-				arrivalTime = planeInfo[1];
-				posX = planeInfo[2];
-				posY = planeInfo[3];
-				posZ = planeInfo[4];
-				velX = planeInfo[5];
-				velY = planeInfo[6];
-				velZ = planeInfo[7];
+			std::cout << "executing PSR\n";
+			int i = 0;
 
-				std::cout << "plane: " + ID +
-						"\nposition: " + posX + ", " + posY + ", " + posZ +
-						"\nspeed: " + velX + ", " + velY + ", " + velZ + "\n";
 
-				// store info somewhere for trajectory calculation
 
-				bool stop = false;
-
-				if(posX < SPACE_X_MIN || posX > SPACE_X_MAX){
-					// stop plane
-					stop = true;
+			for(Plane* plane : planes){
+				if(!planes.empty()){
+					// do this when t_arrival < t_current
+					airspace.push_back(plane);
+					planes.remove(plane);
+					i++;
 				}
-				if(posY < SPACE_Y_MIN || posY > SPACE_Y_MAX){
-					// stop plane
-					stop = true;
-				}
-				if(posZ < SPACE_Z_MIN || posZ > SPACE_Z_MAX){
-					// stop plane
-					stop = true;
-				}
+				else{
+					// stop PSR
+					ChannelDestroy(chid);
 
-				if(stop){
-					plane->stop();
+					return 0;
 				}
-
 			}
-
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 		}
 
@@ -188,6 +183,95 @@ public:
 		return 0;
 	}
 
+	static void *startSSR(void *context){
+		std::cout << "starting SSR\n";
+		return ((ComputerSystem *)context)->SSR();
+	}
+
+	void* SSR(void){
+		// run secondary radar
+		std::cout << "secondary radar started\n";
+		int chid = ChannelCreate(0);
+		if(chid == -1){
+			std::cout <<"couldn't create channel\n";
+		}
+
+		Timer timer(chid);
+		timer.setTimer(SSR_PERIOD, SSR_PERIOD);
+
+		int rcvid;
+		Message msg;
+
+//		int ID, arrivalTime, posX, posY, posZ, velX, velY, velZ;
+
+
+		while(1){
+			std::cout << "executing SSR\n";
+			for(Plane* plane : airspace){
+				if(!airspace.empty()){
+					int* planeInfo = plane->answerRadar();
+
+					std::cout << planeInfo;
+
+					//					for(int i = 0; i < (int*)planeInfo.size(); i++){
+					//						std::cout << ((int*)planeInfo[i]) << " ";
+					//					}
+
+					//					std::cout << "\n";
+
+					//					int i = 0;
+					//					while(token != NULL){
+					//						planeInfo[i] = itoa(token);
+					//						std::cout << planeInfo[i];
+					//						i++;
+					//					}
+					//
+					//					std::cout << planeInfo;
+					//					ID = planeInfo[0];
+					//					arrivalTime = planeInfo[1];
+					//					posX = planeInfo[2];
+					//					posY = planeInfo[3];
+					//					posZ = planeInfo[4];
+					//					velX = planeInfo[5];
+					//					velY = planeInfo[6];
+					//					velZ = planeInfo[7];
+					//
+					////					std::cout << "plane: " + ID +
+					////							"\nposition: " + posX + ", " + posY + ", " + posZ +
+					////							"\nspeed: " + velX + ", " + velY + ", " + velZ + "\n";
+					//
+					//					// store info somewhere for trajectory calculation
+					//
+					//					bool stop = false;
+					//
+					//					if(posX < SPACE_X_MIN || posX > SPACE_X_MAX){
+					//						// stop plane
+					//						stop = true;
+					//					}
+					//					if(posY < SPACE_Y_MIN || posY > SPACE_Y_MAX){
+					//						// stop plane
+					//						stop = true;
+					//					}
+					//					if(posZ < SPACE_Z_MIN || posZ > SPACE_Z_MAX){
+					//						// stop plane
+					//						stop = true;
+					//					}
+					//
+					//					if(stop){
+					//						plane->stop();
+					//					}
+
+				}
+			}
+			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+		}
+
+		ChannelDestroy(chid);
+
+		return 0;
+	}
+
+
 	int calculateTrajectories(){
 
 		return 0;
@@ -195,8 +279,10 @@ public:
 
 private:
 	std::list<Plane*> planes;
-	std::list<Plane*> airspace;
+	std::list<Plane*>::iterator pit1, pit2;
 
+	std::list<Plane*> airspace;
+	std::list<Plane*>::iterator ait1, ait2;
 	pthread_t primaryRadar;
 	pthread_t secondaryRadar;
 
