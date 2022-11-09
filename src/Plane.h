@@ -36,6 +36,7 @@
 
 class Plane {
 public:
+
 	// constructor
 	Plane(int _arrivalTime, int _ID, int _position[3], int _speed[3]){
 		// initialize members
@@ -63,7 +64,7 @@ public:
 
 		logfile << "plane created\nposition: " << position[0] << ", " << position[1] << ", " << position[2] << "\nspeed: " << speed[0] << ", " << speed[1] << ", " << speed[2] << "\n";
 
-		start();
+//		start();
 
 	}
 
@@ -76,12 +77,12 @@ public:
 //		time(&at);
 		return (pthread_create(&planeThread, &attr, updateStart, this) == 0);
 
-		pthread_join(planeThread, NULL);
+//		pthread_join(planeThread, NULL);
 	}
 
 	bool stop(){
 
-//		pthread_join(planeThread, NULL);
+		pthread_join(planeThread, NULL);
 		logfile.close();
 
 		return 0;
@@ -89,6 +90,7 @@ public:
 
 	static void *updateStart(void *context){
 		//		std::cout << "updateStart called\n";
+		// set priority
 		return ((Plane *)context)->updatePosition();
 	}
 

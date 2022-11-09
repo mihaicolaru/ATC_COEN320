@@ -87,8 +87,8 @@ public:
 		int vel[3];
 
 		// start timer here for comparing with arrival time
-		time (&at);
-		std::cout << "Timer start\n";
+		//		time (&at);
+		//		std::cout << "Timer start\n";
 
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
@@ -105,7 +105,9 @@ public:
 			vel[2] = arrivalSpeedZ;
 			Plane plane(arrivalTime, ID, pos, vel), *p;
 			p = &plane;
+			pthread_t planeThread;
 			planes.push_back(p);
+			planeThreads.push_back(planeThread);
 		}
 		std::cout << "number of planes: " << planes.size() << std::endl;
 		return 0;
@@ -117,6 +119,14 @@ public:
 
 		std::cout << "cs start called\n";
 
+		time (&at);
+		std::cout << "Timer start\n";
+
+		int i = 0;
+		for(Plane* plane : planes){
+			pthread_create(&planeThreads.at(i), &attr, plane->updateStart(&ComputerSystem));
+		}
+
 		pthread_create(&primaryRadar, &attr, startPSR, this);
 
 		pthread_create(&secondaryRadar, &attr, startSSR, this);
@@ -126,17 +136,21 @@ public:
 	void stop(){
 
 
-		for(Plane* plane : planes){
-			if(!planes.empty()){
-				// do this when t_arrival < t_current
-				plane->stop();
-				time (&et);
-				double exe = difftime(et,at);
-				std::cout << "finished in: " << exe << "\n";	// plane total time
-			}
-			else{
-				break;
-			}
+//		for(Plane* plane : planes){
+//			if(!planes.empty()){
+//				// do this when t_arrival < t_current
+//				plane->stop();
+//				time (&et);
+//				double exe = difftime(et,at);
+//				std::cout << "finished in: " << exe << "\n";	// plane total time
+//			}
+//			else{
+//				break;
+//			}
+//		}
+
+		for(pthread_t planeThread : planeThreads){
+			pthread_join(planeThread, NULL);
 		}
 
 
@@ -302,6 +316,8 @@ private:
 
 	std::list<Plane*> airspace;
 	std::list<Plane*>::iterator ait1, ait2;
+
+	std::vector<pthread_t> planeThreads;
 
 	pthread_t primaryRadar;
 	pthread_t secondaryRadar;
