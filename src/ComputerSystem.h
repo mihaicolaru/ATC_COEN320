@@ -57,8 +57,10 @@ public:
 
 		time (&at);
 		std::cout << "Timer start\n";
+
 		Display display, *p_disp;
 		p_disp = &display;
+
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
 				arrivalSpeedX >> arrivalSpeedY >> arrivalSpeedZ){
