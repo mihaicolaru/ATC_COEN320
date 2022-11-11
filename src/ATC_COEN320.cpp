@@ -10,7 +10,7 @@
 #include "ComputerSystem.h"
 
 #include "Plane.h"
-
+#include "Display.h"
 
 int main() {
 //	time_t at;
