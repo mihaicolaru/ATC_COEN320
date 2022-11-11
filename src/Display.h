@@ -71,14 +71,24 @@ public:
 
 	void *updateDisplay(void){
 		//		printf("update display called\n");
-		int chid =ChannelCreate(0);
+		int chid = ChannelCreate(0);
 		if(chid == -1){
 			std::cout << "couldn't create channel!\n";
 		}
 
 		Timer timer(chid);
-		timer.setTimer( 1000000, PERIOD_D);
-		printMap();
+		timer.setTimer(PERIOD_D, PERIOD_D);
+
+		int rcvid;
+		Message msg;
+
+		int i = 5;
+		while(i > 0){
+			printMap();
+			i--;
+			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+		}
+
 
 		time(&et);
 		double exe = difftime(et,at);

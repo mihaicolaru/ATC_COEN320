@@ -58,8 +58,9 @@ public:
 		time (&at);
 		std::cout << "Timer start\n";
 
-		Display display, *p_disp;
-		p_disp = &display;
+//		Display display, *p_disp;
+//		p_disp = &display;
+//		p_disp->stop();
 
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
@@ -87,6 +88,7 @@ public:
 	}
 
 	void stop(){
+
 		for(Plane* plane : planes){
 			if(!planes.empty()){
 				//et = std::chrono::steady_clock::now();
