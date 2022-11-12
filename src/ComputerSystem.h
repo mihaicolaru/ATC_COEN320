@@ -31,6 +31,7 @@
 #define SPACE_Z_MIN 0
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
+#include "Display.h"
 
 class ComputerSystem{
 public:
@@ -89,6 +90,12 @@ public:
 		// start timer here for comparing with arrival time
 		//		time (&at);
 		//		std::cout << "Timer start\n";
+		time (&at);
+		std::cout << "Timer start\n";
+
+//		Display display, *p_disp;
+//		p_disp = &display;
+//		p_disp->stop();
 
 		while(input_file_stream >> ID >> arrivalTime >>
 				arrivalCordX >> arrivalCordY >> arrivalCordZ >>
@@ -135,6 +142,10 @@ public:
 
 	void stop(){
 
+//		for(Plane* plane : planes){
+//			if(!planes.empty()){
+				//et = std::chrono::steady_clock::now();
+				//std::cout << "Plane: "  << " finished in: " << std::chrono::duration_cast<std::chrono::microseconds>(et-at).count()/CLOCKS_PER_SEC << std::endl;
 
 //		for(Plane* plane : planes){
 //			if(!planes.empty()){
