@@ -124,6 +124,7 @@ public:
 					}
 
 					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+						// change shared mem object to null
 						ChannelDestroy(chid);
 						return 0;
 					}

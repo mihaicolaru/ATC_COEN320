@@ -7,17 +7,12 @@
 #include <unistd.h>
 
 
-#include "ComputerSystem.h"
-
-#include "Plane.h"
-#include "Display.h"
+#include "ATC.h"
 
 int main() {
 //	time_t at;
 //	time_t et;
-	ComputerSystem atc;
-
-	atc.stop();
+	ATC atc;
 
 //	int arrivalTime1 = 3;
 //	int ID1 = 1;
