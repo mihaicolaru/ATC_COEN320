@@ -34,12 +34,12 @@
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
 
-struct Plane{
-	int ID;
-	int arrivalTime;
-	int position[3];
-	int speed[3];
-};
+//struct Plane{
+//	int ID;
+//	int arrivalTime;
+//	int position[3];
+//	int speed[3];
+//};
 
 class ATC{
 public:
@@ -89,7 +89,7 @@ public:
 
 
 
-	static void *startPlaneUpdate(void *context){
+	friend void *startPlaneUpdate(void *context){
 		// set priority
 		return ((ATC *)context)->UpdatePlanePosition();
 	}
@@ -158,7 +158,7 @@ protected:
 
 			// create new shared memory object
 			std::string planeName = "/plane_" + ID;
-			fd = shm_open(planeName.c_str(), O_RDWR | O_CREAT, 0666);
+			fd = shm_open(planeName.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
 			if(fd == -1){
 				fprintf(stderr, "Open plane shared memory object failed: %s\n", strerror(errno));
 				return EXIT_FAILURE;
@@ -171,7 +171,7 @@ protected:
 			}
 
 			// map memory object
-			plane_addr = (Plane*)mmap(NULL, sizeof(*plane_addr), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+			plane_addr = (Plane*)mmap(0, sizeof(*plane_addr), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 			if(plane_addr == MAP_FAILED){
 				fprintf(stderr, "mmap failed: %s\n", strerror(errno));
 				return EXIT_FAILURE;
@@ -181,31 +181,31 @@ protected:
 
 
 
-			plane_addr->ID = ID;
-			plane_addr->arrivalTime = arrivalTime;
-			plane_addr->position[0] = arrivalCordX;
-			plane_addr->position[1] = arrivalCordY;
-			plane_addr->position[2] = arrivalCordZ;
-			plane_addr->speed[0] = arrivalSpeedX;
-			plane_addr->speed[1] = arrivalSpeedY;
-			plane_addr->speed[2] = arrivalSpeedZ;
-
-
-
-			std::cout << "Plane: " << plane_addr->ID << "\narrival: " << plane_addr->arrivalTime <<
-					"\nposition: " << plane_addr->position[0] << ", " << plane_addr->position[1] << ", " << plane_addr->position[2] <<
-					"\nspeed: " << plane_addr->speed[0] << ", " << plane_addr->speed[1] << ", " << plane_addr->speed[2] << "\n";
-
-			write(fd, plane_addr, sizeof(*plane_addr));
-
-
-			Plane* plane2;
-
-			ssize_t returnSize = read(fd, plane2, sizeof(*plane2));
-
-			std::cout << "Plane: " << plane2->ID << "\narrival: " << plane2->arrivalTime <<
-					"\nposition: " << plane2->position[0] << ", " << plane2->position[1] << ", " << plane2->position[2] <<
-					"\nspeed: " << plane2->speed[0] << ", " << plane2->speed[1] << ", " << plane2->speed[2] << "\n";
+//			plane_addr->ID = ID;
+//			plane_addr->arrivalTime = arrivalTime;
+//			plane_addr->position[0] = arrivalCordX;
+//			plane_addr->position[1] = arrivalCordY;
+//			plane_addr->position[2] = arrivalCordZ;
+//			plane_addr->speed[0] = arrivalSpeedX;
+//			plane_addr->speed[1] = arrivalSpeedY;
+//			plane_addr->speed[2] = arrivalSpeedZ;
+//
+//
+//
+//			std::cout << "Plane: " << plane_addr->ID << "\narrival: " << plane_addr->arrivalTime <<
+//					"\nposition: " << plane_addr->position[0] << ", " << plane_addr->position[1] << ", " << plane_addr->position[2] <<
+//					"\nspeed: " << plane_addr->speed[0] << ", " << plane_addr->speed[1] << ", " << plane_addr->speed[2] << "\n";
+//
+//			write(fd, plane_addr, sizeof(*plane_addr));
+//
+//
+//			Plane* plane2;
+//
+//			ssize_t returnSize = read(fd, plane2, sizeof(*plane2));
+//
+//			std::cout << "Plane: " << plane2->ID << "\narrival: " << plane2->arrivalTime <<
+//					"\nposition: " << plane2->position[0] << ", " << plane2->position[1] << ", " << plane2->position[2] <<
+//					"\nspeed: " << plane2->speed[0] << ", " << plane2->speed[1] << ", " << plane2->speed[2] << "\n";
 
 			// add address of shared memory to planes and waiting planes
 			Planes.push_back(plane_addr);

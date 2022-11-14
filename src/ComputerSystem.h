@@ -131,7 +131,7 @@ public:
 
 		int i = 0;
 		for(Plane* plane : planes){
-			pthread_create(&planeThreads.at(i), &attr, plane->updateStart, this);
+			pthread_create(&planeThreads.at(i), &attr, plane->updateStart, (void *)this);
 		}
 
 		pthread_create(&primaryRadar, &attr, startPSR, this);
