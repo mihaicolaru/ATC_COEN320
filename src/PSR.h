@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <vector>
 
 #include "Timer.h"
 #include "Plane.h"
@@ -23,12 +24,16 @@
 #define SIZE 4096
 #define PSR_PERIOD 5000000
 
+// forward declaration
+class Plane;
+
 class PSR {
 public:
 	// constructor
-	PSR() {
+	PSR(int n){
 
-		initialize();
+
+		initialize(n);
 	}
 
 	// destructor
@@ -37,7 +42,7 @@ public:
 		pthread_mutex_destroy(&mutex);
 	}
 
-	int initialize(){
+	int initialize(int n){
 		// set thread in detached state
 		int rc = pthread_attr_init(&attr);
 		if (rc){
@@ -49,17 +54,26 @@ public:
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
 
-		shm_fd = shm_open("plane_1", O_RDONLY, 0666);
-		if(shm_fd == -1){
+
+
+		shm_waitingPlanes = shm_open("waiting_planes", O_RDONLY, 0666);
+		if(shm_waitingPlanes == -1){
 			perror("in shm_open() PSR");
 			exit(1);
 		}
 
-		ptr = mmap(0, SIZE, PROT_READ, MAP_SHARED, shm_fd, 0);
-		if(ptr == MAP_FAILED){
+		ptr_waitingPlanes = mmap(0, n, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
+		if(ptr_waitingPlanes == MAP_FAILED){
 			perror("in map() PSR");
 			exit(1);
 		}
+
+		char filename[6];
+
+		printf("%s", ptr_waitingPlanes);
+
+//		printf(filename);
+
 
 		return 0;
 	}
@@ -97,13 +111,13 @@ public:
 
 		while(1) {
 			if(rcvid == 0){
-				pthread_mutex_lock(&mutex);
+//				pthread_mutex_lock(&mutex);
 
 				printf("PSR read: ");
-				printf("%s", ptr);
+				printf("%p", ptr_waitingPlanes);
 				printf("\n");
 
-				pthread_mutex_unlock(&mutex);
+//				pthread_mutex_unlock(&mutex);
 			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 			//			std::cout << "executing end\n";
@@ -123,6 +137,8 @@ private:
 	// list of all planes
 	// list of ready planes
 
+	std::shared_ptr<std::vector<Plane*>> waitingPlanes;
+
 	pthread_t PSRthread;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex;
@@ -130,8 +146,8 @@ private:
 	time_t at;
 	time_t et;
 
-	int shm_fd;
-	void *ptr;
+	int shm_waitingPlanes;
+	void *ptr_waitingPlanes;
 
 	friend class Plane;
 };

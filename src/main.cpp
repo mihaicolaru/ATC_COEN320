@@ -17,46 +17,74 @@
 int main() {
 	time_t at;
 	time_t et;
-//	ATC atc;
+	//	ATC atc;
 
 	int arrivalTime1 = 3;
 	int ID1 = 1;
 	int position1[3] = {90000, 90000, 15000};
-	int speed1[3] = {1000, 1000, -1000};
-//
-//	//	int arrivalTime2 = 1;
-//	//	int ID2 = 2;
-//	//	int position2[3] = {90000, 90000, 15000};
-//	//	int speed2[3] = {2000, 500, 1000};
-//	//
-//	//	int arrivalTime3 = 4;
-//	//	int ID3 = 3;
-//	//	int position3[3] = {90000, 90000, 15000};
-//	//	int speed3[3] = {1500, 1400, 950};
-//	//
-//	//	int arrivalTime4 = 1;
-//	//	int ID4 = 4;
-//	//	int position4[3] = {90000, 90000, 15000};
-//	//	int speed4[3] = {2500, 400, 2000};
-//
+	int speed1[3] = {1000, 1000, 0};
+
+	int arrivalTime2 = 1;
+	int ID2 = 2;
+	int position2[3] = {90000, 90000, 15000};
+	int speed2[3] = {2000, 500, 0};
+
+	int arrivalTime3 = 4;
+	int ID3 = 3;
+	int position3[3] = {90000, 90000, 15000};
+	int speed3[3] = {1500, 1400, 0};
+
+	int arrivalTime4 = 1;
+	int ID4 = 4;
+	int position4[3] = {90000, 90000, 15000};
+	int speed4[3] = {2500, 400, 0};
 
 	Plane plane1(arrivalTime1, ID1, position1, speed1);
-	PSR psr;
+	Plane plane2(arrivalTime2, ID2, position2, speed2);
+	Plane plane3(arrivalTime3, ID3, position3, speed3);
+	Plane plane4(arrivalTime4, ID4, position4, speed4);
+
+	std::vector<Plane*> planes;
+
+	planes.push_back(&plane1);
+	planes.push_back(&plane2);
+	planes.push_back(&plane3);
+	planes.push_back(&plane4);
+
+//	std::cout << planes.at(0)->getFD() << "\n";
+
+	int shm_planeList = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
+
+
+	ftruncate(shm_planeList, sizeof(planes));
+
+	void* ptr = mmap(0, sizeof(planes), PROT_READ | PROT_WRITE, MAP_SHARED, shm_planeList, 0);
+
+	sprintf((char*)ptr, "%s", plane1.getFD());
+
+	for(Plane* plane : planes){
+//		sprintf((char*)ptr, "%p\n", plane);
+
+		//	printf("plane list:\n");
+		//	printf("%s\n", ptr);
+	}
+
+	//	std::shared_ptr<std::vector<Plane*>> sharedPlanes = std::make_shared<std::vector<Plane*>> (std::move(planes));
+
+	PSR psr(sizeof(planes));
 	psr.start();
 
-	time (&at);
+	//	time (&at);
 	plane1.start();
-//	//	Plane plane2(arrivalTime2, ID2, position2, speed2);
-//	//	Plane plane3(arrivalTime3, ID3, position3, speed3);
-//	//	Plane plane4(arrivalTime4, ID4, position4, speed4);
-//
+
 	plane1.stop();
-	time (&et);
-	double exe = difftime(et,at);
-	std::cout << "finished in: " << exe;
 	//	plane2.stop();
 	//	plane3.stop();
 	//	plane4.stop();
 
+	//	psr.stop();
+	//	time (&et);
+	//	double exe = difftime(et,at);
+	//	std::cout << "finished in: " << exe << "\n";
 	return 0;
 }

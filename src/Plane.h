@@ -83,7 +83,7 @@ public:
 			exit(1);
 		}
 
-		toString();
+		updateString();
 
 		std::cout << planeString << "\n";
 
@@ -100,8 +100,8 @@ public:
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());
-		printf("Initial read: ");
-		printf("%s\n", ptr);
+//		printf("Initial read: ");
+//		printf("%s\n", ptr);
 
 		return 0;
 	}
@@ -158,7 +158,7 @@ public:
 					for(int i = 0; i < 3; i++){
 						position[i] = position[i] + speed[i];
 					}
-					toString();
+					updateString();
 					std::cout << planeString << "\n";
 
 					pthread_mutex_lock(&mutex);
@@ -204,11 +204,23 @@ public:
 		return 0;
 	}
 
-	void toString(){
+	void updateString(){
 		std::string s = " ";
 		planeString = std::to_string(ID) + " " + std::to_string(arrivalTime) + " " +
 				std::to_string(position[0]) + " " + std::to_string(position[1]) + " " + std::to_string(position[2]) + " " +
-				std::to_string(speed[0]) + " " + std::to_string(speed[1]) + " " + std::to_string(speed[2]);
+				std::to_string(speed[0]) + " " + std::to_string(speed[1]) + " " + std::to_string(speed[2]) + "\n";
+	}
+
+	std::string getString(){
+		return planeString;
+	}
+
+	void Print(){
+		std::cout << planeString << "\n";
+	}
+
+	const char* getFD(){
+		return fileName.c_str();
 	}
 
 	int* answerRadar(){
