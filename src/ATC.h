@@ -14,6 +14,7 @@
 #include <list>
 #include <pthread.h>
 #include <stdio.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/neutrino.h>
 #include <sys/siginfo.h>
@@ -153,7 +154,9 @@ protected:
       Plane *plane_addr;
 
       // create new shared memory object
-      std::string planeName = "/plane_" + ID;
+      // std::string planeName = "/plane_" + ID;
+      std::string planeName = "plane_" + std::to_string(ID);
+
       fd = shm_open(planeName.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
       if (fd == -1) {
         fprintf(stderr, "Open plane shared memory object failed: %s\n",
