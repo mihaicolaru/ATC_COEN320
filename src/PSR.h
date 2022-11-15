@@ -54,25 +54,52 @@ public:
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
 
-
-
+		// open list of waiting planes shm
 		shm_waitingPlanes = shm_open("waiting_planes", O_RDONLY, 0666);
 		if(shm_waitingPlanes == -1){
 			perror("in shm_open() PSR");
 			exit(1);
 		}
 
-		ptr_waitingPlanes = mmap(0, n, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
+		ptr_waitingPlanes = mmap(0, 4096, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
 		if(ptr_waitingPlanes == MAP_FAILED){
 			perror("in map() PSR");
 			exit(1);
 		}
 
-		char filename[6];
+		char allPlanes[36];
+		char filename[8];
+		char* arrayOfFilenames[4];
 
-		printf("%s", ptr_waitingPlanes);
+		for(int i = 0; i < 36; i++){
+			pthread_mutex_lock(&mutex);
 
-//		printf(filename);
+			char readChar = *((char*)ptr_waitingPlanes + i);
+			allPlanes[i] = readChar;
+
+//			int j = 0;
+//			bool endOfLine = false;
+//
+//			while(!endOfLine){
+//
+//				char readChar = *((char*)ptr_waitingPlanes + j);
+//
+////				if(readChar == " ")){
+////					endOfLine = true;
+////				}
+////				else{
+////					filename[j] = readChar;
+////				}
+//				j++;
+//			}
+//
+//			arrayOfFilenames[i] = strdup(filename);
+
+			pthread_mutex_unlock(&mutex);
+		}
+
+
+		printf("PSR initial read: %s\n", allPlanes);
 
 
 		return 0;
@@ -111,13 +138,13 @@ public:
 
 		while(1) {
 			if(rcvid == 0){
-//				pthread_mutex_lock(&mutex);
+				//				pthread_mutex_lock(&mutex);
 
-				printf("PSR read: ");
-				printf("%p", ptr_waitingPlanes);
-				printf("\n");
+//				printf("PSR read: ");
+//				printf("%s", ptr_waitingPlanes);
+//				printf("\n");
 
-//				pthread_mutex_unlock(&mutex);
+				//				pthread_mutex_unlock(&mutex);
 			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 			//			std::cout << "executing end\n";
@@ -137,7 +164,8 @@ private:
 	// list of all planes
 	// list of ready planes
 
-	std::shared_ptr<std::vector<Plane*>> waitingPlanes;
+	std::vector<void *> planePtrs;
+	std::vector<std::string> planeFD;
 
 	pthread_t PSRthread;
 	pthread_attr_t attr;

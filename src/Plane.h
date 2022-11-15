@@ -75,8 +75,15 @@ public:
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
 
+		char number[2];
+		itoa(ID, number, 10);
 		// open shm
 		fileName = "plane_" + std::to_string(ID);
+//		fileName += number;
+
+
+		std::cout << "plane filename: " << fileName << "\n";
+
 		shm_fd = shm_open(fileName.c_str(), O_CREAT | O_RDWR, 0666);
 		if(shm_fd == -1){
 			perror("in shm_open() plane");
@@ -85,7 +92,7 @@ public:
 
 		updateString();
 
-		std::cout << planeString << "\n";
+		//		std::cout << planeString << "\n";
 
 		ftruncate(shm_fd, sizeof(planeString));
 
@@ -100,14 +107,14 @@ public:
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());
-//		printf("Initial read: ");
-//		printf("%s\n", ptr);
+		//		printf("Initial read: ");
+		//		printf("%s\n", ptr);
 
 		return 0;
 	}
 
 	int start(){
-		std::cout << "start called\n";
+		//		std::cout << "start called\n";
 		if(pthread_create(&planeThread, &attr, &Plane::updateStart, (void *) this) != EOK){
 			planeThread = NULL;
 		}
@@ -159,7 +166,7 @@ public:
 						position[i] = position[i] + speed[i];
 					}
 					updateString();
-					std::cout << planeString << "\n";
+					//					std::cout << planeString << "\n";
 
 					pthread_mutex_lock(&mutex);
 

@@ -51,22 +51,27 @@ int main() {
 	planes.push_back(&plane3);
 	planes.push_back(&plane4);
 
-//	std::cout << planes.at(0)->getFD() << "\n";
+	//	std::cout << planes.at(0)->getFD() << "\n";
 
 	int shm_planeList = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
 
 
-	ftruncate(shm_planeList, sizeof(planes));
+	ftruncate(shm_planeList, 4096);
 
-	void* ptr = mmap(0, sizeof(planes), PROT_READ | PROT_WRITE, MAP_SHARED, shm_planeList, 0);
+	void* ptr = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, shm_planeList, 0);
 
-	sprintf((char*)ptr, "%s", plane1.getFD());
 
+
+	int i = 0;
 	for(Plane* plane : planes){
-//		sprintf((char*)ptr, "%p\n", plane);
 
-		//	printf("plane list:\n");
-		//	printf("%s\n", ptr);
+		sprintf((char*)ptr + i, "%s ", plane->getFD());
+		i += 8;
+//		const char* fileDes = plane->getFD();
+//		for(int j = 0; j < 8; j++){
+//			sprintf(((char*)ptr + j + i*8), "%s", fileDes[j]);
+//		}
+//		i++;
 	}
 
 	//	std::shared_ptr<std::vector<Plane*>> sharedPlanes = std::make_shared<std::vector<Plane*>> (std::move(planes));
