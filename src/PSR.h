@@ -57,16 +57,16 @@ public:
       exit(1);
     }
 
-    ptr_waitingPlanes =
-        mmap(0, 4096, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
+    ptr_waitingPlanes = mmap(0, 4096, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
     if (ptr_waitingPlanes == MAP_FAILED) {
       perror("in map() PSR");
       exit(1);
     }
 
     char allPlanes[36];
-    char filename[8];
-    char *arrayOfFilenames[4];
+//    char filename[8];
+//    char *arrayOfFilenames[4];
+    std::vector<std::string> fileNames;
 
     for (int i = 0; i < numberOfPlanes * 9; i++) {
       pthread_mutex_lock(&mutex);
@@ -96,7 +96,35 @@ public:
       pthread_mutex_unlock(&mutex);
     }
 
-    printf("PSR initial read: %s\n", allPlanes);
+    printf("PSR read allPlanes: %s\n", allPlanes);
+
+    for(int i = 0; i < numberOfPlanes; i++){
+    	std::string filename = "";
+
+    	for(int j = 0; j < 8; j++){
+    		filename += allPlanes[j + i*8];
+    	}
+    	std::cout << filename << "\n";
+    	fileNames.push_back(filename);
+
+//    	filename = allPlanes[j] + allPlanes[j+1] + allPlanes[j+2] + allPlanes[j+3] + allPlanes[j+4] + allPlanes[j+5] + allPlanes[j+6] + allPlanes[j+7];
+//    	filename[0] = allPlanes[j];
+//    	filename[1] = allPlanes[j + 1];
+//    	filename[2] = allPlanes[j + 2];
+//    	filename[3] = allPlanes[j + 3];
+//    	filename[4] = allPlanes[j + 4];
+//    	filename[5] = allPlanes[j + 5];
+//    	filename[6] = allPlanes[j + 6];
+//    	filename[7] = allPlanes[j + 7];
+//    	fileNames.push_back(filename);
+//    	j += 8;
+    }
+
+
+    for(int i = 0; i < numberOfPlanes; i++){
+    	printf("Plane %i: %s\n", i, fileNames.at(i));
+    }
+
 
     return 0;
   }
