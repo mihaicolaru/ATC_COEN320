@@ -51,26 +51,69 @@ public:
 	int initialize() {
 		// read input from file
 		readInput();
+
 		// initialize shm for waiting planes (contains all planes)
-		// initialize shared memory space for airspace (contains no planes)
+		shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
+		if(shm_waitingPlanes == -1){
+			perror("in shm_open() ATC: waiting planes");
+			exit(1);
+		}
+
+		// map shm
+		waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
+		if(waitingPtr == MAP_FAILED){
+			printf("map failed waiting planes\n");
+			return -1;
+		}
+
+		// save file descriptors to shm
+		int i = 0;
+		int j = 0;
+		for (Plane* plane : planes) {
+			printf("initialize: %s\n", planes.at(j++)->getFD());
+			sprintf((char *)waitingPtr + i, "%s ", plane->getFD());
+			i += 8;
+		}
+
+
+		// initialize shm for airspace (contains no planes)
+		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
+		if(shm_airspace == -1){
+			perror("in shm_open() ATC: airspace");
+			exit(1);
+		}
+
+		// map shm
+		airspacePtr = mmap(0, SIZE_SHM_PSR/*change to airspace*/, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+		if(airspacePtr == MAP_FAILED){
+			printf("map failed airspace\n");
+			return -1;
+		}
+
 		// create PSR object with number of planes
+		PSR primaryRadar(planes.size());
+		psr = &primaryRadar;
 
 		return 0; // set to error code if any
 	}
 
 	int start() {
 
-
-
-		// start timer for arrivalTime comparison
-		// assign shared memory object to thread create thread for PSR create thread
-		// for SSR create thread for ComputerSystem create thread for Display create
-		// thread for Console create thread for Comm
+		// start threaded objects
+		psr->start();
+		for(Plane * plane : planes){
+			plane->start();
+		}
 
 		// ============ execution time ============
 
-		// call plane-> stop for all plane objects
-		// call psr stop
+		// join threaded objects
+		for(Plane * plane : planes){
+			plane->stop();
+		}
+		psr->stop();
+
+
 		return 0; // set to error code if any
 	}
 
@@ -94,6 +137,9 @@ protected:
 
 		std::string separator = " ";
 
+		int pos[3];
+		int vel[3];
+
 		// parse input.txt to create plane objects
 		while (input_file_stream >> ID >> arrivalTime >> arrivalCordX >>
 				arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
@@ -103,20 +149,35 @@ protected:
 					<< separator << arrivalCordY << separator << arrivalCordZ
 					<< separator << arrivalSpeedX << separator << arrivalSpeedY
 					<< separator << arrivalSpeedZ << std::endl;
-
+			pos[0] = arrivalCordX;
+			pos[1] = arrivalCordY;
+			pos[2] = arrivalCordZ;
+			vel[0] = arrivalSpeedX;
+			vel[1] = arrivalSpeedY;
+			vel[2] = arrivalSpeedZ;
 
 			// create plane objects and add pointer to each plane to a vector
-
+			Plane plane(ID, arrivalTime, pos, vel);
+			planes.push_back(&plane);
 		}
+
+
+		int i = 0;
+		for(Plane* plane : planes){
+			printf("readinput: %s\n", plane->getFD());
+		}
+
+		return 0;
 	}
 
 
 	// ============================ MEMBERS ============================
 
-	// plane queues
-	std::vector<Plane *> Planes; // vector of pointers to plane objects
-	std::vector<Plane *> waitingPlanes; // planes not in airspace
-	std::vector<Plane *> airspace;      // planes in airspace
+	// planes
+	std::vector<Plane *> planes; // vector of pointers to plane objects
+
+	// psr
+	PSR* psr;
 
 	// timers
 	time_t startTime;
@@ -130,6 +191,10 @@ protected:
 	// airspace
 	int shm_airspace;
 	void* airspacePtr;
+
+	pthread_mutex_t mutex;
+
+
 };
 
 #endif /* ATC_H_ */
