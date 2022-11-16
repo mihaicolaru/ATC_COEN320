@@ -21,7 +21,8 @@
 #include "Plane.h"
 #include "Timer.h"
 
-#define SIZE 4096
+#define SIZE_SHM_PLANES 4096
+#define SIZE_SHM_PSR 4096
 #define PSR_PERIOD 5000000
 
 // forward declaration
@@ -34,7 +35,10 @@ public:
 
 	// destructor
 	~PSR() {
-		shm_unlink("plane_1");
+
+		for(std::string filename : fileNames){
+			shm_unlink(filename.c_str());
+		}
 		pthread_mutex_destroy(&mutex);
 	}
 
@@ -51,102 +55,71 @@ public:
 		}
 
 		// open list of waiting planes shm
-		shm_waitingPlanes = shm_open("waiting_planes", O_RDONLY, 0666);
+		shm_waitingPlanes = shm_open("waiting_planes", O_RDWR, 0666);
 		if (shm_waitingPlanes == -1) {
 			perror("in shm_open() PSR");
 			exit(1);
 		}
 
-		ptr_waitingPlanes = mmap(0, 4096, PROT_READ, MAP_SHARED, shm_waitingPlanes, 0);
+		ptr_waitingPlanes = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
 		if (ptr_waitingPlanes == MAP_FAILED) {
 			perror("in map() PSR");
 			exit(1);
 		}
 
+		// buffer to read waitingPlanes shm
 		char allPlanes[36];
 
-		//    char filename[8];
-		//    char *arrayOfFilenames[4];
-
-
+		// read waiting planes shm
 		for (int i = 0; i < numberOfPlanes * 9; i++) {
-			pthread_mutex_lock(&mutex);
-
 			char readChar = *((char *)ptr_waitingPlanes + i);
 			allPlanes[i] = readChar;
-
-			//			int j = 0;
-			//			bool endOfLine = false;
-			//
-			//			while(!endOfLine){
-			//
-			//				char readChar =
-			//*((char*)ptr_waitingPlanes + j);
-			//
-			////				if(readChar == " ")){
-			////					endOfLine = true;
-			////				}
-			////				else{
-			////					filename[j] = readChar;
-			////				}
-			//				j++;
-			//			}
-			//
-			//			arrayOfFilenames[i] = strdup(filename);
-
-			pthread_mutex_unlock(&mutex);
 		}
 
-		printf("PSR read allPlanes: %s\n", allPlanes);
+		//		printf("PSR read allPlanes: %s\n", allPlanes);
 
+		// link shm objects for each plane
 		for(int i = 0; i < numberOfPlanes; i++){
 			std::string filename = "";
 
+			// read 1 plane filename
 			for(int j = 0; j < 7; j++){
 				filename += allPlanes[j + i*8];
 			}
-			std::cout << filename << "\n";
+			//			std::cout << filename << "\n";
+			// store filenames to vector
 			fileNames.push_back(filename);
 
-			//    	filename = allPlanes[j] + allPlanes[j+1] + allPlanes[j+2] + allPlanes[j+3] + allPlanes[j+4] + allPlanes[j+5] + allPlanes[j+6] + allPlanes[j+7];
-			//    	filename[0] = allPlanes[j];
-			//    	filename[1] = allPlanes[j + 1];
-			//    	filename[2] = allPlanes[j + 2];
-			//    	filename[3] = allPlanes[j + 3];
-			//    	filename[4] = allPlanes[j + 4];
-			//    	filename[5] = allPlanes[j + 5];
-			//    	filename[6] = allPlanes[j + 6];
-			//    	filename[7] = allPlanes[j + 7];
-			//    	fileNames.push_back(filename);
-			//    	j += 8;
-
+			// open shm for current plane
 			int shm_plane = shm_open(filename.c_str(), O_RDONLY, 0666);
 			if(shm_plane == -1){
 				perror("in shm_open() plane");
 				exit(1);
 			}
 
-			void* ptr = mmap(0, SIZE, PROT_READ, MAP_SHARED, shm_plane, 0);
+			// map memory for current plane
+			void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
 			if (ptr == MAP_FAILED) {
 				perror("in map() PSR");
 				exit(1);
 			}
+
+			// store shm pointer to vector
 			planePtrs.push_back(ptr);
 		}
 
 
-		for(int i = 0; i < numberOfPlanes; i++){
-			printf("Plane %i: %s\n", i, fileNames.at(i));
-		}
+		//		for(int i = 0; i < numberOfPlanes; i++){
+		//			printf("Plane %i: %s\n", i, fileNames.at(i));
+		//		}
 
 
 		return 0;
 	}
 
 	int start() {
-		std::cout << "PSR start called\n";
-		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) !=
-				EOK) {
+		//		std::cout << "PSR start called\n";
+		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
 			PSRthread = NULL;
 		}
 	}
@@ -156,11 +129,13 @@ public:
 		return 0;
 	}
 
+	// entry point for execution thread
 	static void *startPSR(void *context) { ((PSR *)context)->operatePSR(); }
 
+	// execution thread
 	void *operatePSR(void) {
 		//		std::cout << "start exec\n";
-		// update position every second from position and speed every second
+		// create channel to communicate with timer
 		int chid = ChannelCreate(0);
 		if (chid == -1) {
 			std::cout << "couldn't create channel!\n";
@@ -181,13 +156,23 @@ public:
 				int i = 0;
 				for(void* ptr : planePtrs){
 					printf("Plane %i: %s\n", i++, ptr);
+					// parse plane shm to extract t_arrival
+					// compare with current time
+					// if t_arrival < t_current OR "terminated"
+
+					// remove current plane from waitingplanes fildes vector
+					// add current plane to airspace fildes vector
+
+					// remove current plane from ptr vector
 				}
+				// write new waitingPlanes to shm from waitingplanes fildes vector
+				// write new airspace to shm from airspace fildes vector
+
 				printf("\n");
 
 				pthread_mutex_unlock(&mutex);
 			}
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
-			//			std::cout << "executing end\n";
 		}
 
 		ChannelDestroy(chid);
@@ -195,27 +180,31 @@ public:
 		return 0;
 	}
 
-	int discover() {
-		// scan all planes and find ready (Tarrival <= Tcurrent)
-		// move ready planes to ready list
-	}
+	// add function to change timer settings depending on n (congestion control)
 
 private:
-	// list of all planes
-	// list of ready planes
-
-	std::vector<void *> planePtrs;
-	std::vector<std::string> fileNames;
-
+	// thread members
 	pthread_t PSRthread;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex;
 
+	// timing members
 	time_t at;
 	time_t et;
 
+	// shm members
+	// waiting planes list
 	int shm_waitingPlanes;
 	void *ptr_waitingPlanes;
+	std::vector<std::string> fileNames;
+
+	// access waiting planes
+	std::vector<void *> planePtrs;
+
+	// airspace list
+	int shm_airspace;
+	void *ptr_airspace;
+	std::vector<std::string> airspaceFileNames;
 
 	friend class Plane;
 };

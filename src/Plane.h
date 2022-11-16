@@ -37,7 +37,7 @@
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
 
-#define SIZE 4096
+#define SIZE_SHM_PLANES 4096
 
 class Plane {
 public:
@@ -75,44 +75,36 @@ public:
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
 
-		char number[2];
-		itoa(ID, number, 10);
-		// open shm
+		// instantiate filename
 		fileName = "plane_" + std::to_string(ID);
-//		fileName += number;
 
-
-		std::cout << "plane filename: " << fileName << "\n";
-
+		// open shm object
 		shm_fd = shm_open(fileName.c_str(), O_CREAT | O_RDWR, 0666);
 		if(shm_fd == -1){
 			perror("in shm_open() plane");
 			exit(1);
 		}
 
-		updateString();
-
-		//		std::cout << planeString << "\n";
-
-		ftruncate(shm_fd, sizeof(planeString));
+		// set the size of shm
+		ftruncate(shm_fd, SIZE_SHM_PLANES);
 
 		// map shm
-		ptr = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+		ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 		if(ptr == MAP_FAILED){
 			printf("map failed\n");
 			return -1;
 		}
 
-
+		// update string of plane data
+		updateString();
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());
-		//		printf("Initial read: ");
-		//		printf("%s\n", ptr);
 
 		return 0;
 	}
 
+	// call static function to start thread
 	int start(){
 		//		std::cout << "start called\n";
 		if(pthread_create(&planeThread, &attr, &Plane::updateStart, (void *) this) != EOK){
@@ -122,14 +114,14 @@ public:
 		return 0;
 	}
 
+	// join execution thread
 	bool stop(){
 
 		pthread_join(planeThread, NULL);
-		logfile.close();
-
 		return 0;
 	}
 
+	// entry point for execution thread
 	static void *updateStart(void *context){
 		//		std::cout << "updateStart called\n";
 		// set priority
@@ -137,24 +129,23 @@ public:
 		return 0;
 	}
 
+	// update position every second from position and speed
 	void* updatePosition(void){
-		//		std::cout << "start exec\n";
-		// update position every second from position and speed every second
+		// create channel to link timer
 		int chid = ChannelCreate(0);
 		if(chid == -1){
 			std::cout << "couldn't create channel!\n";
 		}
 
-		logfile << "plane " << ID << " started:\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
-
+		// create timer and set offset and period
 		Timer timer(chid);
 		timer.setTimer(arrivalTime * 1000000, PLANE_PERIOD);
 
+		// buffers for message from timer
 		int rcvid;
 		Message msg;
 
 		bool start = true;
-
 		while(1) {
 			if(start){
 				// first cycle, wait for arrival time
@@ -165,14 +156,14 @@ public:
 					for(int i = 0; i < 3; i++){
 						position[i] = position[i] + speed[i];
 					}
+					// save modifications to string
 					updateString();
-					//					std::cout << planeString << "\n";
 
 					pthread_mutex_lock(&mutex);
 
+					// check for airspace limits, write to shm
 
 					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
-						// change shared mem object to null
 						planeString = "terminated";
 						sprintf((char* )ptr, "%s", planeString.c_str());
 						ChannelDestroy(chid);
@@ -195,15 +186,10 @@ public:
 					sprintf((char* )ptr, "%s", planeString.c_str());
 
 					pthread_mutex_unlock(&mutex);
-
-					//					std::cout << "executing\n";
-					//					std::cout << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
-					//					logfile << "plane " << ID << ":\ncurrent position: " << position[0] << ", " << position[1] << ", " << position[2] << "\n";
-
 				}
 			}
+			// wait until next timer pulse
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
-			//			std::cout << "executing end\n";
 		}
 
 		ChannelDestroy(chid);
@@ -211,6 +197,7 @@ public:
 		return 0;
 	}
 
+	// stringify plane data members
 	void updateString(){
 		std::string s = " ";
 		planeString = std::to_string(ID) + " " + std::to_string(arrivalTime) + " " +
@@ -230,60 +217,35 @@ public:
 		return fileName.c_str();
 	}
 
-	int* answerRadar(){
-		// might need a mutex here, maybe not since only read
-
-
-		// return ID speed and position, per radar request
-
-		//		char* planeInfo;
-		//		std::string separator;
-		//		separator = " ";
-		//		std::stringstream info;
-		//		info << ID << separator << arrivalTime << separator << position[0] << separator << position[1] << separator << position[2] << separator << speed[0]  << separator << speed[1]  << separator << speed[2];
-		//
-		//		planeInfo = info.str();
-
-		//		int planeInfo[8];
-		//
-		//		planeInfo[0] = ID;
-		//		planeInfo[1] = arrivalTime;
-		//		planeInfo[2] = position[0];
-		//		planeInfo[3] = position[1];
-		//		planeInfo[4] = position[2];
-		//		planeInfo[5] = speed[0];
-		//		planeInfo[6] = speed[1];
-		//		planeInfo[7] = speed[2];
-		//
-		//		std::cout << &planeInfo[0];
-		//
-		//		return &planeInfo[0];
-	}
-
-
 	int receiveCommand(){
-		// receive command from comm subsystem, adjust speed or position
+		// receive command from comm subsystem via computer, adjust speed or position
+		// adjust member variables according to command
 		return 0;
 	}
 
 
 private:
+	// data members
 	int arrivalTime;
 	int ID;
 	int position [3];
 	int speed [3];
+
+	// thread members
 	pthread_t planeThread;
 	pthread_attr_t attr;
-	std::ofstream logfile;
 	pthread_mutex_t mutex;
+
+	// timing members
 	time_t at;
 	time_t et;
 
+	// shm members
 	int shm_fd;
 	void *ptr;
 	std::string planeString;
 	std::string fileName;
-	friend class PSR;
+
 };
 
 
