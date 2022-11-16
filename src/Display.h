@@ -28,13 +28,13 @@
 #include <sys/neutrino.h>
 #include <time.h>
 
-#include "PSR.h"
+
 #define SCALER 3000
 #define MARGIN 100000
 #define PERIOD_D 5000000 //5sec period
-#define SIZE 4096
-#define SIZE_SHM_PLANES 4096
-#define SIZE_SHM_PSR 4096
+
+#define SIZE_SHM_DISPLAY 4096
+
 
 const int block_count = (int)MARGIN/(int)SCALER;
 
@@ -77,57 +77,30 @@ public:
 
 	void initialize_shm(){
 		// open list of waiting planes shm
-		shm_waitingPlanes = shm_open("waiting_planes", O_RDWR, 0666);
-		if (shm_waitingPlanes == -1) {
-			perror("in shm_open() PSR");
+		shm_display = shm_open("display", O_RDONLY, 0666);
+		if (shm_display == -1) {
+			perror("in shm_open() display");
 			exit(1);
 		}
 
-		ptr_waitingPlanes = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
-		if (ptr_waitingPlanes == MAP_FAILED) {
+		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ, MAP_SHARED, shm_display, 0);
+		if (ptr_display == MAP_FAILED) {
 			perror("in map() PSR");
 			exit(1);
 		}
 
-		// buffer to read waitingPlanes shm
-		char allPlanes[36];
+		// buffer to read display shm
+		char buffer[SIZE];
 
 		// read waiting planes shm
-		for (int i = 0; i < nbOfPlanesInAS * 9; i++) {
-			char readChar = *((char *)ptr_waitingPlanes + i);
-			allPlanes[i] = readChar;
+		for (int i = 0; i < SIZE; i++) {
+			char readChar = *((char *)ptr_display + i);
+			buffer[i] = readChar;
 		}
 
 		//		printf("PSR read allPlanes: %s\n", allPlanes);
 
-		// link shm objects for each plane
-		for(int i = 0; i < nbOfPlanesInAS; i++){
-			std::string filename = "";
 
-			// read 1 plane filename
-			for(int j = 0; j < 7; j++){
-				filename += allPlanes[j + i*8];
-			}
-
-			//			std::cout << filename << "\n";
-			// store filenames to vector
-			fileNames.push_back(filename);
-
-			// open shm for current plane
-			int shm_plane = shm_open(filename.c_str(), O_RDONLY, 0666);
-			if(shm_plane == -1){
-				perror("in shm_open() plane");
-				exit(1);
-			}
-
-			// map memory for current plane
-			void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
-			if (ptr == MAP_FAILED) {
-				perror("in map() PSR");
-				exit(1);
-			}
-			// store shm pointer to vector
-			planePtrs.push_back(ptr);
 		}
 	}
 
@@ -243,8 +216,8 @@ private:
 
 	// shm members
 	// waiting planes list
-	int shm_waitingPlanes;
-	void *ptr_waitingPlanes;
+	int shm_display;
+	void *ptr_display;
 	std::vector<std::string> fileNames;
 
 	// access waiting planes
