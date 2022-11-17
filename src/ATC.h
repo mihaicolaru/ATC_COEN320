@@ -35,166 +35,153 @@
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
 
-
 class ATC {
 public:
-	ATC() {
-		initialize();
+  ATC() {
+    initialize();
 
-		start();
-	}
+    start();
+  }
 
-	~ATC() {
-		// release all shared memory pointers
-	}
+  ~ATC() {
+    // release all shared memory pointers
+  }
 
-	int initialize() {
-		// read input from file
-		readInput();
+  int initialize() {
+    // read input from file
+    readInput();
 
-		// initialize shm for waiting planes (contains all planes)
-		shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
-		if(shm_waitingPlanes == -1){
-			perror("in shm_open() ATC: waiting planes");
-			exit(1);
-		}
+    // initialize shm for waiting planes (contains all planes)
+    shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
+    if (shm_waitingPlanes == -1) {
+      perror("in shm_open() ATC: waiting planes");
+      exit(1);
+    }
 
-		// map shm
-		waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
-		if(waitingPtr == MAP_FAILED){
-			printf("map failed waiting planes\n");
-			return -1;
-		}
+    // map shm
+    waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED,
+                      shm_waitingPlanes, 0);
+    if (waitingPtr == MAP_FAILED) {
+      printf("map failed waiting planes\n");
+      return -1;
+    }
 
-		// save file descriptors to shm
-		int i = 0;
-		int j = 0;
-		for (Plane plane : planes) {
-			printf("initialize: %s\n", planes.at(j++).getFD());
-			sprintf((char *)waitingPtr + i, "%s ", plane.getFD());
-			i += 8;
-		}
+    // save file descriptors to shm
+    int i = 0;
+    int j = 0;
+    for (Plane plane : planes) {
+      printf("initialize: %s\n", planes.at(j++).getFD());
+      sprintf((char *)waitingPtr + i, "%s ", plane.getFD());
+      i += 8;
+    }
 
+    // initialize shm for airspace (contains no planes)
+    shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
+    if (shm_airspace == -1) {
+      perror("in shm_open() ATC: airspace");
+      exit(1);
+    }
 
-		// initialize shm for airspace (contains no planes)
-		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
-		if(shm_airspace == -1){
-			perror("in shm_open() ATC: airspace");
-			exit(1);
-		}
+    // map shm
+    airspacePtr = mmap(0, SIZE_SHM_PSR /*change to airspace*/,
+                       PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+    if (airspacePtr == MAP_FAILED) {
+      printf("map failed airspace\n");
+      return -1;
+    }
 
-		// map shm
-		airspacePtr = mmap(0, SIZE_SHM_PSR/*change to airspace*/, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if(airspacePtr == MAP_FAILED){
-			printf("map failed airspace\n");
-			return -1;
-		}
+    // create PSR object with number of planes
+    PSR *current_psr = new PSR(planes.size());
+    psr = current_psr;
 
-		// create PSR object with number of planes
-		PSR primaryRadar(planes.size());
-		psr = primaryRadar;
+    return 0; // set to error code if any
+  }
 
-		return 0; // set to error code if any
-	}
+  int start() {
 
-	int start() {
+    // start threaded objects
+    psr->start();
+    for (Plane plane : planes) {
+      plane.start();
+    }
 
-		// start threaded objects
-		psr.start();
-		for(Plane plane : planes){
-			plane.start();
-		}
+    // ============ execution time ============
 
-		// ============ execution time ============
+    // join threaded objects
+    for (Plane plane : planes) {
+      plane.stop();
+    }
+    psr->stop();
 
-		// join threaded objects
-		for(Plane plane : planes){
-			plane.stop();
-		}
-		psr.stop();
-
-
-		return 0; // set to error code if any
-	}
-
+    return 0; // set to error code if any
+  }
 
 protected:
+  int readInput() {
+    // open input.txt
+    std::string filename = "./input.txt";
+    std::ifstream input_file_stream;
 
-	int readInput() {
-		// open input.txt
-		std::string filename = "./input.txt";
-		std::ifstream input_file_stream;
+    input_file_stream.open(filename);
 
-		input_file_stream.open(filename);
+    if (!input_file_stream) {
+      std::cout << "Can't find file input.txt" << std::endl;
+      return 1;
+    }
 
-		if (!input_file_stream) {
-			std::cout << "Can't find file input.txt" << std::endl;
-			return 1;
-		}
+    int ID, arrivalTime, arrivalCordX, arrivalCordY, arrivalCordZ,
+        arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ;
 
-		int ID, arrivalTime, arrivalCordX, arrivalCordY, arrivalCordZ,
-		arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ;
+    std::string separator = " ";
 
-		std::string separator = " ";
+    // parse input.txt to create plane objects
+    while (input_file_stream >> ID >> arrivalTime >> arrivalCordX >>
+           arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
+           arrivalSpeedZ) {
 
-		int pos[3];
-		int vel[3];
+      std::cout << ID << separator << arrivalTime << separator << arrivalCordX
+                << separator << arrivalCordY << separator << arrivalCordZ
+                << separator << arrivalSpeedX << separator << arrivalSpeedY
+                << separator << arrivalSpeedZ << std::endl;
 
-		// parse input.txt to create plane objects
-		while (input_file_stream >> ID >> arrivalTime >> arrivalCordX >>
-				arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
-				arrivalSpeedZ) {
+      int pos[3] = {arrivalCordX, arrivalCordY, arrivalCordZ};
+      int vel[3] = {arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ};
 
-			std::cout << ID << separator << arrivalTime << separator << arrivalCordX
-					<< separator << arrivalCordY << separator << arrivalCordZ
-					<< separator << arrivalSpeedX << separator << arrivalSpeedY
-					<< separator << arrivalSpeedZ << std::endl;
-			pos[0] = arrivalCordX;
-			pos[1] = arrivalCordY;
-			pos[2] = arrivalCordZ;
-			vel[0] = arrivalSpeedX;
-			vel[1] = arrivalSpeedY;
-			vel[2] = arrivalSpeedZ;
+      // create plane objects and add pointer to each plane to a vector
+      Plane plane(ID, arrivalTime, pos, vel);
+      planes.push_back(plane);
+    }
 
-			// create plane objects and add pointer to each plane to a vector
-			Plane plane(ID, arrivalTime, pos, vel);
-			planes.push_back(plane);
-		}
+    int i = 0;
+    for (Plane plane : planes) {
+      printf("readinput: %s\n", plane.getFD());
+    }
 
+    return 0;
+  }
 
-		int i = 0;
-		for(Plane plane : planes){
-			printf("readinput: %s\n", plane.getFD());
-		}
+  // ============================ MEMBERS ============================
 
-		return 0;
-	}
+  // planes
+  std::vector<Plane> planes; // vector of plane objects
 
+  // psr
+  PSR *psr;
 
-	// ============================ MEMBERS ============================
+  // timers
+  time_t startTime;
+  time_t endTime;
 
-	// planes
-	std::vector<Plane> planes; // vector of pointers to plane objects
+  // shm members
+  // waiting planes
+  int shm_waitingPlanes;
+  void *waitingPtr;
 
-	// psr
-	PSR psr;
+  // airspace
+  int shm_airspace;
+  void *airspacePtr;
 
-	// timers
-	time_t startTime;
-	time_t endTime;
-
-	// shm members
-	// waiting planes
-	int shm_waitingPlanes;
-	void* waitingPtr;
-
-	// airspace
-	int shm_airspace;
-	void* airspacePtr;
-
-	pthread_mutex_t mutex;
-
-
+  pthread_mutex_t mutex;
 };
 
 #endif /* ATC_H_ */
