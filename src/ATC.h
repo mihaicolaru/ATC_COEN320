@@ -69,9 +69,9 @@ public:
 		// save file descriptors to shm
 		int i = 0;
 		int j = 0;
-		for (Plane* plane : planes) {
-			printf("initialize: %s\n", planes.at(j++)->getFD());
-			sprintf((char *)waitingPtr + i, "%s ", plane->getFD());
+		for (Plane plane : planes) {
+			printf("initialize: %s\n", planes.at(j++).getFD());
+			sprintf((char *)waitingPtr + i, "%s ", plane.getFD());
 			i += 8;
 		}
 
@@ -92,7 +92,7 @@ public:
 
 		// create PSR object with number of planes
 		PSR primaryRadar(planes.size());
-		psr = &primaryRadar;
+		psr = primaryRadar;
 
 		return 0; // set to error code if any
 	}
@@ -100,18 +100,18 @@ public:
 	int start() {
 
 		// start threaded objects
-		psr->start();
-		for(Plane * plane : planes){
-			plane->start();
+		psr.start();
+		for(Plane plane : planes){
+			plane.start();
 		}
 
 		// ============ execution time ============
 
 		// join threaded objects
-		for(Plane * plane : planes){
-			plane->stop();
+		for(Plane plane : planes){
+			plane.stop();
 		}
-		psr->stop();
+		psr.stop();
 
 
 		return 0; // set to error code if any
@@ -158,13 +158,13 @@ protected:
 
 			// create plane objects and add pointer to each plane to a vector
 			Plane plane(ID, arrivalTime, pos, vel);
-			planes.push_back(&plane);
+			planes.push_back(plane);
 		}
 
 
 		int i = 0;
-		for(Plane* plane : planes){
-			printf("readinput: %s\n", plane->getFD());
+		for(Plane plane : planes){
+			printf("readinput: %s\n", plane.getFD());
 		}
 
 		return 0;
@@ -174,10 +174,10 @@ protected:
 	// ============================ MEMBERS ============================
 
 	// planes
-	std::vector<Plane *> planes; // vector of pointers to plane objects
+	std::vector<Plane> planes; // vector of pointers to plane objects
 
 	// psr
-	PSR* psr;
+	PSR psr;
 
 	// timers
 	time_t startTime;
