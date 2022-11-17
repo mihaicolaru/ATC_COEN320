@@ -70,7 +70,7 @@ public:
 			exit (EXIT_FAILURE);
 		}
 
-		std::cout << "timer created\n";
+//		std::cout << "timer created\n";
 	}
 
 	int setTimer(uint64_t offset, int period){
@@ -91,5 +91,6 @@ public:
 	struct itimerspec timer;	// timer data structure
 	int coid;					// connection back to ourselves
 };
+
 
 #endif /* TIMER_H_ */
