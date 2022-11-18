@@ -32,7 +32,9 @@
 #define SCALER 3000
 #define MARGIN 100000
 #define PERIOD_D 5000000 //5sec period
+
 #define SIZE 4096
+#define SIZE_SHM_DISPLAY 4096
 
 const int block_count = (int)MARGIN/(int)SCALER;
 
@@ -70,7 +72,6 @@ public:
 
 	void initialize_shm(){
 		// open list of waiting planes shm
-
 		printf("shm section\n");
 		printf("%i\n", nbOfPlanes);
 		shm_displayData= shm_open("display", O_RDWR, 0666);
@@ -81,10 +82,12 @@ public:
 		printf("finished reading to displayData\n");
 		ptr_positionData = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
 		if (ptr_positionData == MAP_FAILED) {
+
 			perror("in map() PSR");
 			exit(1);
 		}
 		printf("finished mapping to positionData\n");
+
 
 		int axis=0;//0=X, 1=Y, 2=Z;
 		std::string buffer = "";
@@ -122,7 +125,6 @@ public:
 				//				printf("Buffer: %s\n",buffer);
 			}
 		}
-
 	}
 
 	int start(){
@@ -194,14 +196,15 @@ private:
 	int map[block_count][block_count]={{0}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
 
 	int nbOfPlanes=0;
-	std::string dataStr;
+
 	// shm members
 	int shm_displayData;//Display required info
 	void *ptr_positionData;
 
+
 	void printMap(){
 		size_t n = sizeof(posX)/sizeof(int);
-//		map[block_count][block_count]={0};//Need to make it work (reset)
+		//		map[block_count][block_count]={0};//Need to make it work (reset)
 		std::cout << block_count << std::endl;
 		if((int) n != 0){
 			for(int i=0; i<(int) n; i++){
@@ -229,13 +232,10 @@ private:
 				std::cout << "Plane " << std::to_string(i+1) <<
 						" has at height: " << std::to_string(posZ[i])
 						<< std::endl;
-
 			}
 		}
 
 	}
-
 };
-
 
 #endif /* DISPLAY_H_ */

@@ -11,37 +11,36 @@
 #include "Display.h"
 #include "PSR.h"
 #include "Plane.h"
+
 #define SIZE 4096
+
 int main() {
+
 	// create shm of planes to display
 	int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
-	if (shm_display == -1) {
-		perror("in shm_open() main:display");
-		exit(1);
-	}
-	//ftruncate(shm_display, SIZE);
+
+	ftruncate(shm_display, SIZE);
+
 
 	// map the memory
 	void *ptr = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
 	if (ptr== MAP_FAILED) {
-	      printf("ptr failed in main\n");
-	      return -1;
-	    }
+		printf("ptr failed in main\n");
+		return -1;
+	}
 
 	// figure out your input string to send to display (from computer system)
 	std::string inputString = "90000,80000,16000;8000,30000,17000;";
 
 	char arrayString[inputString.length()]="90000,80000,16000;8000,30000,17000;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
 
-	// transfer string to char buffer
-
 	// save file descriptors to shm
 	for (int i = 0; i < sizeof(arrayString); i++) {
 		sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
 	}
 
-		Display display(2);
-		display.start();
-		display.stop();
+	Display display(2);
+	display.start();
+	display.stop();
 	return 0;
 }
