@@ -11,6 +11,7 @@
 #include "ATC.h"
 #include "Display.h"
 #include "PSR.h"
+#include "SSR.h"
 #include "Plane.h"
 
 int main() {
