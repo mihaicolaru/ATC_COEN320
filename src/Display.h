@@ -93,7 +93,7 @@ public:
 		std::string buffer = "";
 		int planeNb=0;
 		// read waiting planes shm
-		for (int i = 0; i < (nbOfPlanes * 18); i++) {
+		for (int i = 0; i < (nbOfPlanes * 20); i++) {
 			char readChar = *((char *)ptr_positionData + i);
 			if(readChar == ',' || readChar == ';'){
 				if(buffer.length() >0){
@@ -106,6 +106,9 @@ public:
 						break;
 					case 2:
 						posZ[planeNb]= stoi(buffer);
+						break;
+					case 3:
+						displayZ[planeNb]= stoi(buffer);
 						break;
 					}
 				}
@@ -159,18 +162,11 @@ public:
 		int rcvid;
 		Message msg;
 
-		//		parseData();
-		//		printMap();
 		while(1){
-			//			printf("%i\n", posX[0]);
 			printMap();
-			map[block_count][block_count]={0};
+			printHeight();
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
 		}
-
-		//		time(&et);
-		//		double exe = difftime(et,at);
-		//		std::cout << "DISPLAY finished in: " << exe << std::endl;
 
 		ChannelDestroy(chid);
 		return 0;
@@ -189,10 +185,12 @@ private:
 	//	int posX[5] = {50000,12000,30000,20000,70000};
 	//	int posY[5] = {19000,12000,7000, 50000, 90000};
 	//	int posZ[5] = {12000,15000,11000,10000,10000};
+
 	//size not dynamic
 	int posX[5];
 	int posY[5];
 	int posZ[5];
+	int displayZ[5];
 	int map[block_count][block_count]={{0}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
 
 	int nbOfPlanes=0;
@@ -204,10 +202,9 @@ private:
 
 	void printMap(){
 		size_t n = sizeof(posX)/sizeof(int);
-		//		map[block_count][block_count]={0};//Need to make it work (reset)
-		std::cout << block_count << std::endl;
-		if((int) n != 0){
-			for(int i=0; i<(int) n; i++){
+		memset(map, 0, sizeof(map[0][0]) * block_count * block_count);//Reset to 0 for next set
+		if(nbOfPlanes != 0){
+			for(int i=0; i<nbOfPlanes; i++){
 				map[posX[i]/SCALER][posY[i]/SCALER]++;
 			}
 
@@ -221,20 +218,20 @@ private:
 				}
 				std::cout << std::endl;
 			}
-
 		}
 	}
 
 	void printHeight(){
-		size_t n = sizeof(posZ)/sizeof(int);
-		if((int) n != 0){
-			for(int i =0; i<(int)n;i++){
-				std::cout << "Plane " << std::to_string(i+1) <<
-						" has at height: " << std::to_string(posZ[i])
-						<< std::endl;
+		if(nbOfPlanes  != 0){
+			for(int i =0; i<nbOfPlanes;i++){
+				if(displayZ[i]==1){
+					std::cout << "Plane " << std::to_string(i+1) <<
+							" has at height: " << std::to_string(posZ[i])
+							<< std::endl;
+				}
+
 			}
 		}
-
 	}
 };
 

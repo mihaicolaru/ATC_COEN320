@@ -30,9 +30,9 @@ int main() {
 	}
 
 	// figure out your input string to send to display (from computer system)
-	std::string inputString = "90000,80000,16000;8000,30000,17000;";
+	std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
 
-	char arrayString[inputString.length()]="90000,80000,16000;8000,30000,17000;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
+	char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
 
 	// save file descriptors to shm
 	for (int i = 0; i < sizeof(arrayString); i++) {
