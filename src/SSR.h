@@ -109,9 +109,72 @@ public:
 		return 0;
 	}
 
+	int start() {
+			//		std::cout << "SSR start called\n";
+			if (pthread_create(&SSRthread, &attr, &SSR::startSSR, (void *)this) != EOK) {
+				SSRthread = NULL;
+			}
+		}
+
+		int stop() {
+			pthread_join(SSRthread, NULL);
+			return 0;
+		}
+
+		// entry point for execution thread
+		static void *startSSR(void *context) { ((SSR *)context)->operateSSR(); }
+
+		// execution thread
+		void *operateSSR(void) {
+			//		std::cout << "start exec\n";
+			// create channel to communicate with timer
+			int chid = ChannelCreate(0);
+			if (chid == -1) {
+				std::cout << "couldn't create channel!\n";
+			}
+
+			Timer timer(chid);
+			timer.setTimer(SSR_PERIOD, SSR_PERIOD);
+
+			int rcvid;
+			Message msg;
+
+			while (1) {
+				if (rcvid == 0) {
+					pthread_mutex_lock(&mutex);
+
+					printf("PSR read: \n");
+
+					int i = 0;
+					for(void* ptr : planePtrs){
+						printf("Plane %i: %s\n", i++, ptr);
+						// parse plane shm to extract t_arrival
+						// compare with current time
+						// if t_arrival < t_current OR "terminated"
+
+						// remove current plane from waitingplanes fildes vector
+						// add current plane to airspace fildes vector
+
+						// remove current plane from ptr vector
+					}
+					// write new waitingPlanes to shm from waitingplanes fildes vector
+					// write new airspace to shm from airspace fildes vector
+
+					printf("\n");
+
+					pthread_mutex_unlock(&mutex);
+				}
+				rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+			}
+
+			ChannelDestroy(chid);
+
+			return 0;
+		}
+
 private:
 	// thread members
-		pthread_t PSRthread;
+		pthread_t SSRthread;
 		pthread_attr_t attr;
 		pthread_mutex_t mutex;
 
