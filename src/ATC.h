@@ -36,7 +36,6 @@
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
 
-
 class ATC {
 public:
 	ATC() {
@@ -220,6 +219,7 @@ protected:
 	void *airspacePtr;
 
 	pthread_mutex_t mutex;
+
 };
 
 #endif /* ATC_H_ */

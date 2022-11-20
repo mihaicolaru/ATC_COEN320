@@ -43,7 +43,7 @@ class Plane {
 public:
 
 	// constructor
-	Plane(int _arrivalTime, int _ID, int _position[3], int _speed[3]){
+	Plane(int _ID, int _arrivalTime, int _position[3], int _speed[3]){
 		// initialize members
 		arrivalTime = _arrivalTime;
 		ID = _ID;
@@ -78,6 +78,9 @@ public:
 		// instantiate filename
 		fileName = "plane_" + std::to_string(ID);
 
+
+//		printf("Plane %i filename: %s\n", ID, fileName.c_str());
+
 		// open shm object
 		shm_fd = shm_open(fileName.c_str(), O_CREAT | O_RDWR, 0666);
 		if(shm_fd == -1){
@@ -97,6 +100,7 @@ public:
 
 		// update string of plane data
 		updateString();
+
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());
@@ -215,6 +219,10 @@ public:
 
 	const char* getFD(){
 		return fileName.c_str();
+	}
+
+	std::string getFileString(){
+		return fileName;
 	}
 
 	int receiveCommand(){

@@ -7,9 +7,7 @@
 #include <unistd.h>
 
 #include "ComputerSystem.h"
-#include "Display.h"
-#include "PSR.h"
-#include "Plane.h"
+
 #include "ATC.h"
 
 #define SIZE_DISPLAY 4096
@@ -22,4 +20,5 @@ int main() {
 	atc.start();
 
 	return 0;
+
 }

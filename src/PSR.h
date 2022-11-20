@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "Plane.h"
-#include "Display.h"
 #include "Timer.h"
 
 #define SIZE_SHM_PLANES 4096
@@ -87,14 +86,18 @@ public:
 			for(int j = 0; j < 7; j++){
 				filename += allPlanes[j + i*8];
 			}
-			//			std::cout << filename << "\n";
+
+			std::cout << filename << "\n";
+
 			// store filenames to vector
 			fileNames.push_back(filename);
 
 			// open shm for current plane
 			int shm_plane = shm_open(filename.c_str(), O_RDONLY, 0666);
 			if(shm_plane == -1){
-				perror("in shm_open() plane");
+
+			perror("in shm_open() PSR plane");
+
 				exit(1);
 			}
 
@@ -208,7 +211,6 @@ private:
 	std::vector<std::string> airspaceFileNames;
 
 	friend class Plane;
-	friend class Display;
 };
 
 #endif /* PSR_H_ */
