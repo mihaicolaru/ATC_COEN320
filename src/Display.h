@@ -33,7 +33,7 @@
 #define MARGIN 100000
 #define PERIOD_D 5000000 //5sec period
 
-#define SIZE 4096
+#define SIZE_DISPLAY 4096
 #define SIZE_SHM_DISPLAY 4096
 
 const int block_count = (int)MARGIN/(int)SCALER;
@@ -80,7 +80,9 @@ public:
 			exit(1);
 		}
 		printf("finished reading to displayData\n");
-		ptr_positionData = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
+
+		ptr_positionData = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
+
 		if (ptr_positionData == MAP_FAILED) {
 
 			perror("in map() PSR");

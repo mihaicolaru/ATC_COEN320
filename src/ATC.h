@@ -23,6 +23,7 @@
 
 #include "Plane.h"
 #include "Timer.h"
+#include "Display.h"
 
 #define PSR_PERIOD 5000000
 #define SSR_PERIOD 5000000
@@ -51,32 +52,106 @@ public:
 	int initialize() {
 		// read input from file
 		readInput();
-		// initialize shm for waiting planes (contains all planes)
-		// initialize shared memory space for airspace (contains no planes)
-		// create PSR object with number of planes
 
+		/*Planes' Shared Memory Initialization*/
+		// initialize shm for waiting planes (contains all planes)
+		shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
+		if (shm_waitingPlanes == -1) {
+			perror("in shm_open() ATC: waiting planes");
+			exit(1);
+		}
+
+		ftruncate(shm_waitingPlanes, SIZE_SHM_PSR);
+
+		// map shm
+		waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED,
+				shm_waitingPlanes, 0);
+		if (waitingPtr == MAP_FAILED) {
+			printf("map failed waiting planes\n");
+			return -1;
+		}
+
+		// save file descriptors to shm
+		int i = 0;
+		for (Plane *plane : planes) {
+			printf("initialize: %s\n", plane->getFD());
+
+			sprintf((char *)waitingPtr + i, "%s ", plane->getFD());
+
+			printf("length of planeFD: %zu\n", strlen(plane->getFD()));
+
+			// add one more space
+			i += (strlen(plane->getFD()) + 1);
+		}
+
+		// initialize shm for airspace (contains no planes)
+		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
+		if (shm_airspace == -1) {
+			perror("in shm_open() ATC: airspace");
+			exit(1);
+		}
+
+		// map shm
+		airspacePtr = mmap(0, SIZE_SHM_PSR /*change to airspace*/,
+				PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+		if (airspacePtr == MAP_FAILED) {
+			printf("map failed airspace\n");
+			return -1;
+		}
+
+		// create PSR object with number of planes
+		PSR *current_psr = new PSR(planes.size());
+		psr = current_psr;
+
+		/*Display's Shared Memory Initialization*/
+		// create shm of planes to display
+		int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
+
+		ftruncate(shm_display, SIZE_DISPLAY);
+
+		// map the memory
+		void *ptr = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if (ptr== MAP_FAILED) {
+			printf("Display ptr failed mapping\n");
+			return -1;
+		}
+
+		// figure out your input string to send to display (from computer system)
+		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
+
+		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
+
+		// save file descriptors to shm
+		for (int i = 0; i < sizeof(arrayString); i++) {
+			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
+		}
+		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
+		display = newDisplay;
 		return 0; // set to error code if any
 	}
 
 	int start() {
 
-
-
-		// start timer for arrivalTime comparison
-		// assign shared memory object to thread create thread for PSR create thread
-		// for SSR create thread for ComputerSystem create thread for Display create
-		// thread for Console create thread for Comm
+		// start threaded objects
+		psr->start();
+		display->start();
+		for (Plane *plane : planes) {
+			plane->start();
+		}
 
 		// ============ execution time ============
 
-		// call plane-> stop for all plane objects
-		// call psr stop
+		// join threaded objects
+		for (Plane *plane : planes) {
+			plane->stop();
+		}
+
+		psr->stop();
+		display->stop();
 		return 0; // set to error code if any
 	}
 
-
 protected:
-
 	int readInput() {
 		// open input.txt
 		std::string filename = "./input.txt";
@@ -104,19 +179,32 @@ protected:
 					<< separator << arrivalSpeedX << separator << arrivalSpeedY
 					<< separator << arrivalSpeedZ << std::endl;
 
+			int pos[3] = {arrivalCordX, arrivalCordY, arrivalCordZ};
+			int vel[3] = {arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ};
 
 			// create plane objects and add pointer to each plane to a vector
-
+			Plane *plane = new Plane(ID, arrivalTime, pos, vel);
+			planes.push_back(plane);
 		}
-	}
 
+		int i = 0;
+		for (Plane *plane : planes) {
+			printf("readinput: %s\n", plane->getFD());
+		}
+
+		return 0;
+	}
 
 	// ============================ MEMBERS ============================
 
-	// plane queues
-	std::vector<Plane *> Planes; // vector of pointers to plane objects
-	std::vector<Plane *> waitingPlanes; // planes not in airspace
-	std::vector<Plane *> airspace;      // planes in airspace
+	// planes
+	std::vector<Plane *> planes; // vector of plane objects
+
+	// psr
+	PSR *psr;
+
+	// Display
+	Display *display;
 
 	// timers
 	time_t startTime;
@@ -125,11 +213,13 @@ protected:
 	// shm members
 	// waiting planes
 	int shm_waitingPlanes;
-	void* waitingPtr;
+	void *waitingPtr;
 
 	// airspace
 	int shm_airspace;
-	void* airspacePtr;
+	void *airspacePtr;
+
+	pthread_mutex_t mutex;
 };
 
 #endif /* ATC_H_ */
