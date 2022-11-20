@@ -78,6 +78,7 @@ public:
 		// instantiate filename
 		fileName = "plane_" + std::to_string(ID);
 
+
 //		printf("Plane %i filename: %s\n", ID, fileName.c_str());
 
 		// open shm object
@@ -99,6 +100,7 @@ public:
 
 		// update string of plane data
 		updateString();
+
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());

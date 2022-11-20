@@ -9,17 +9,16 @@
 #include "ComputerSystem.h"
 
 #include "ATC.h"
-#include "Display.h"
-#include "PSR.h"
-#include "SSR.h"
-#include "Plane.h"
+
+#define SIZE_DISPLAY 4096
+
+#define SIZE 4096
 
 int main() {
-  time_t at;
-  time_t et;
-  ATC atc;
-  atc.start();
 
+	ATC atc;
+	atc.start();
 
-  return 0;
+	return 0;
+
 }
