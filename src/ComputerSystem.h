@@ -60,7 +60,7 @@ public:
 		}
 
 		// shared memory import from the display to present the data
-		shm_displayData = shm_open("display", 0_RDWR, 0666);
+		shm_displayData = shm_open("display", O_RDWR, 0666);
 		if(shm_displayData == -1) {
 			perror("in shm_open() Display");
 			exit(1);
@@ -69,7 +69,7 @@ public:
 		//pointer for the display data
 		ptr_positionData = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
 		if(ptr_positionData == MAP_FAILED) {
-			peror("in map() Display");
+			perror("in map() Display");
 			exit(1);
 		}
 
@@ -79,10 +79,6 @@ public:
 			perror("in shm_open() PSR");
 			exit(1);
 		}
-
-
-
-
 		// maybe separate reading file and initializing planes
 
 		return 0;
@@ -122,6 +118,11 @@ private:
 	// timing members
 	time_t at;
 	time_t et;
+
+	// display list
+	int shm_displayData;
+	void *ptr_positionData;
+	std::vector<std::string>
 
 	// waiting planes list
 	int shm_waitingPlanes;
