@@ -73,7 +73,7 @@ public:
 		// save file descriptors to shm
 		int i = 0;
 		for (Plane *plane : planes) {
-			printf("initialize: %s\n", plane->getFD());
+//			printf("initialize: %s\n", plane->getFD());
 
 			sprintf((char *)waitingPtr + i, "%s ", plane->getFD());
 
