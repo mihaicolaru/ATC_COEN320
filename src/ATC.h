@@ -60,11 +60,11 @@ public:
 			exit(1);
 		}
 
+		// set shm size
 		ftruncate(shm_waitingPlanes, SIZE_SHM_PSR);
 
 		// map shm
-		waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED,
-				shm_waitingPlanes, 0);
+		waitingPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
 		if (waitingPtr == MAP_FAILED) {
 			printf("map failed waiting planes\n");
 			return -1;
@@ -75,28 +75,33 @@ public:
 		for (Plane *plane : planes) {
 //			printf("initialize: %s\n", plane->getFD());
 
-			sprintf((char *)waitingPtr + i, "%s ", plane->getFD());
+			sprintf((char *)waitingPtr + i, "%s,", plane->getFD());
 
-			printf("length of planeFD: %zu\n", strlen(plane->getFD()));
+//			printf("length of planeFD: %zu\n", strlen(plane->getFD()));
 
-			// add one more space
+			// move index
 			i += (strlen(plane->getFD()) + 1);
+
 		}
+		sprintf((char *)waitingPtr + i - 1, ";");	// file termination character
 
 		// initialize shm for airspace (contains no planes)
-		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
+		shm_airspace = shm_open("flying_planes", O_CREAT | O_RDWR, 0666);
 		if (shm_airspace == -1) {
 			perror("in shm_open() ATC: airspace");
 			exit(1);
 		}
 
+		// set shm size
+		ftruncate(shm_airspace, SIZE_SHM_SSR);
+
 		// map shm
-		airspacePtr = mmap(0, SIZE_SHM_PSR /*change to airspace*/,
-				PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+		airspacePtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
 		if (airspacePtr == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
+		sprintf((char *)airspacePtr, ";");
 
 		// create PSR object with number of planes
 		PSR *current_psr = new PSR(planes.size());
@@ -106,6 +111,7 @@ public:
 		// create shm of planes to display
 		int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
 
+		// set shm size
 		ftruncate(shm_display, SIZE_DISPLAY);
 
 		// map the memory
@@ -173,10 +179,10 @@ protected:
 				arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
 				arrivalSpeedZ) {
 
-			std::cout << ID << separator << arrivalTime << separator << arrivalCordX
-					<< separator << arrivalCordY << separator << arrivalCordZ
-					<< separator << arrivalSpeedX << separator << arrivalSpeedY
-					<< separator << arrivalSpeedZ << std::endl;
+//			std::cout << ID << separator << arrivalTime << separator << arrivalCordX
+//					<< separator << arrivalCordY << separator << arrivalCordZ
+//					<< separator << arrivalSpeedX << separator << arrivalSpeedY
+//					<< separator << arrivalSpeedZ << std::endl;
 
 			int pos[3] = {arrivalCordX, arrivalCordY, arrivalCordZ};
 			int vel[3] = {arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ};
@@ -186,10 +192,10 @@ protected:
 			planes.push_back(plane);
 		}
 
-		int i = 0;
-		for (Plane *plane : planes) {
-			printf("readinput: %s\n", plane->getFD());
-		}
+//		int i = 0;
+//		for (Plane *plane : planes) {
+//			printf("readinput: %s\n", plane->getFD());
+//		}
 
 		return 0;
 	}
