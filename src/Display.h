@@ -74,6 +74,7 @@ public:
 		// open list of waiting planes shm
 //		printf("shm section\n");
 //		printf("%i\n", nbOfPlanes);
+
 		shm_displayData= shm_open("display", O_RDWR, 0666);
 		if (shm_displayData == -1) {
 			perror("in shm_open() Display");
@@ -85,7 +86,7 @@ public:
 
 		if (ptr_positionData == MAP_FAILED) {
 
-			perror("in map() PSR");
+			perror("in map() Display");
 			exit(1);
 		}
 //		printf("finished mapping to positionData\n");
