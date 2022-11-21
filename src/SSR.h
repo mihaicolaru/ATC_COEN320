@@ -54,7 +54,7 @@ public:
 		}
 
 		// open list of waiting planes shm
-		shm_airspace = shm_open("waiting_planes", O_RDWR, 0666);
+		shm_airspace = shm_open("flying_planes", O_RDWR, 0666);
 		if (shm_airspace == -1) {
 			perror("in shm_open() PSR");
 			exit(1);

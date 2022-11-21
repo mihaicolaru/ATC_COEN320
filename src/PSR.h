@@ -87,7 +87,6 @@ public:
 				fileNames.push_back(FD_buffer);
 
 				// open shm for current plane
-				// open shm for current plane
 				int shm_plane = shm_open(FD_buffer.c_str(), O_RDONLY, 0666);
 				if(shm_plane == -1){
 					perror("in shm_open() PSR plane");
@@ -110,48 +109,6 @@ public:
 
 			FD_buffer += readChar;
 		}
-
-		//		printf("PSR read allPlanes: %s\n", allPlanes);
-
-		// link shm objects for each plane
-		//		for(int i = 0; i < numberOfPlanes; i++){
-		//			std::string filename = "";
-		//
-		//			// read 1 plane filename
-		//			for(int j = 0; j < 7; j++){
-		//				filename += allPlanes[j + i*8];
-		//			}
-		//
-		//			std::cout << filename << "\n";
-		//
-		//			// store filenames to vector
-		//			fileNames.push_back(filename);
-		//
-		//			// open shm for current plane
-		//			int shm_plane = shm_open(filename.c_str(), O_RDONLY, 0666);
-		//			if(shm_plane == -1){
-		//
-		//				perror("in shm_open() PSR plane");
-		//
-		//				exit(1);
-		//			}
-		//
-		//			// map memory for current plane
-		//			void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
-		//			if (ptr == MAP_FAILED) {
-		//				perror("in map() PSR");
-		//				exit(1);
-		//			}
-		//
-		//			// store shm pointer to vector
-		//			planePtrs.push_back(ptr);
-		//		}
-
-
-		//		for(int i = 0; i < numberOfPlanes; i++){
-		//			printf("Plane %i: %s\n", i, fileNames.at(i));
-		//		}
-
 
 		return 0;
 	}
