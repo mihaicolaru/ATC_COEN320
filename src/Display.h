@@ -72,15 +72,15 @@ public:
 
 	void initialize_shm(){
 		// open list of waiting planes shm
-		printf("shm section\n");
-		printf("%i\n", nbOfPlanes);
+//		printf("shm section\n");
+//		printf("%i\n", nbOfPlanes);
 
 		shm_displayData= shm_open("display", O_RDWR, 0666);
 		if (shm_displayData == -1) {
 			perror("in shm_open() Display");
 			exit(1);
 		}
-		printf("finished reading to displayData\n");
+//		printf("finished reading to displayData\n");
 
 		ptr_positionData = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
 
@@ -89,7 +89,7 @@ public:
 			perror("in map() Display");
 			exit(1);
 		}
-		printf("finished mapping to positionData\n");
+//		printf("finished mapping to positionData\n");
 
 
 		int axis=0;//0=X, 1=Y, 2=Z;
@@ -134,7 +134,7 @@ public:
 	}
 
 	int start(){
-		std::cout << "Start display function\n";
+//		std::cout << "Start display function\n";
 		if(pthread_create(&displayThread, &attr, &Display::updateStart, (void *) this) != EOK){
 			displayThread = NULL;
 		}
