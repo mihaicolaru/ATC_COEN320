@@ -24,7 +24,7 @@
 
 #define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 5000000
+#define PSR_PERIOD 2000000
 
 // forward declaration
 class Plane;
@@ -144,7 +144,7 @@ public:
 		return 0;
 	}
 
-	int start() {
+	void start() {
 		//		std::cout << "PSR start called\n";
 		time(&at);
 		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
@@ -186,13 +186,10 @@ public:
 					char readChar = *((char *)ptr);
 
 					if(readChar == 't'){
-						// remove and send to ssr
+						// remove and update ssr
 //						std::cout << "terminated\n";
 
 						move = true;
-
-						// add current fd to airspace fd vector
-//						flyingFileNames.push_back(waitingFileNames.at(i));
 
 						// remove current fd from waiting planes fd vector
 						waitingFileNames.erase(waitingFileNames.begin() + i);
@@ -203,10 +200,6 @@ public:
 						i--;	// reduce number of planes
 					}
 					else{
-						// find current id
-						int curr_id = atoi((char *)ptr);
-//						printf("current id: %i\n", curr_id);
-
 						// find first comma after the ID
 						int j = 0;
 						for(; j < 4; j++){
@@ -246,7 +239,6 @@ public:
 
 				// if planes to be moved are found, write to flying planes shm
 				if(move){
-					pthread_mutex_lock(&mutex);
 					//					printf("airspace before move: %s\n", ptr_airspace);
 //					std::cout << "planes to move:\n";
 //					for(std::string name : airspaceFileNames){
@@ -280,6 +272,8 @@ public:
 						}
 					}
 					currentAirspace += ";";
+
+					pthread_mutex_lock(&mutex);
 
 					// write new airspace to shm
 					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());

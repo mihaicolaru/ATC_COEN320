@@ -27,9 +27,6 @@
 #include "PSR.h"
 #include "SSR.h"
 
-#define PSR_PERIOD 5000000
-#define SSR_PERIOD 5000000
-
 #define SPACE_X_MIN 0
 #define SPACE_X_MAX 100000
 #define SPACE_Y_MIN 0
@@ -48,6 +45,18 @@ public:
 
 	~ATC() {
 		// release all shared memory pointers
+		shm_unlink("airspace");
+		shm_unlink("waiting_planes");
+		shm_unlink("flying_planes");
+		shm_unlink("display");
+
+		for(Plane *plane : planes){
+			delete plane;
+		}
+		delete psr;
+		delete ssr;
+		delete display;
+
 	}
 
 	int initialize() {

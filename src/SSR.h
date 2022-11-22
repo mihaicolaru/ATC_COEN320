@@ -24,7 +24,7 @@
 #define SIZE_SHM_AIRSPACE 4096
 #define SIZE_SHM_SSR 4096
 #define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 5000000
+#define SSR_PERIOD 2000000
 
 class Plane;
 
@@ -36,6 +36,9 @@ public:
 
 	// destructor
 	~SSR(){
+
+		shm_unlink("flying_planes");
+		shm_unlink("airspace");
 		for(std::string filename : fileNames){
 			shm_unlink(filename.c_str());
 		}
@@ -119,29 +122,27 @@ public:
 			if (rcvid == 0) {
 
 				// read flying planes shm
-				printf("flying planes: %s\n", ptr_flyingPlanes);
 
 				std::string FD_buffer = "";
 
 				for(int i = 0; i < SIZE_SHM_SSR; i++){
 					char readChar = *((char *)ptr_flyingPlanes + i);
-					std::cout << "buffer: " << FD_buffer << "\n";
+//					std::cout << "buffer: " << FD_buffer << "\n";
 
 					if(readChar == ';'){
 						if(i == 0) break;	// no flying planes
 
-						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
+//						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
 
-						// check if plane already in list
-						bool inList = true;
+						bool inFile = true;
 
-//						for(std::string filename : flyingFileNames){
-//							if(FD_buffer == filename){
-//								inList = false;
-//							}
-//						}
+						for(std::string filename : flyingFileNames){
+							if(filename == FD_buffer){
+								inFile = false;
+							}
+						}
 
-						if(inList){
+						if(inFile){
 							flyingFileNames.push_back(FD_buffer);
 
 							// open shm for current plane
@@ -160,24 +161,25 @@ public:
 							}
 
 							planePtrs.push_back(ptr);
-						}
 
-						// end of flying planes
+							// end of flying planes
+							break;
+						}
 						break;
 					}
 					// found a plane, open shm
 					else if(readChar == ','){
-						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
+						//						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
 
-						bool inList = true;
+						bool inFile = true;
 
-//						for(std::string filename : flyingFileNames){
-//							if(FD_buffer == filename){
-//								inList = false;
-//							}
-//						}
+						for(std::string filename : flyingFileNames){
+							if(filename == FD_buffer){
+								inFile = false;
+							}
+						}
 
-						if(inList){
+						if(inFile){
 							flyingFileNames.push_back(FD_buffer);
 
 							// open shm for current plane
@@ -196,15 +198,18 @@ public:
 							}
 
 							planePtrs.push_back(ptr);
+
+							// reset buffer for next plane
+							FD_buffer = "";
+							continue;
 						}
 
-						// reset buffer for next plane
 						FD_buffer = "";
 						continue;
 					}
 
+					// just add the char to the buffer
 					FD_buffer += readChar;
-
 				}
 
 				// get plane info
@@ -280,11 +285,8 @@ public:
 				std::cout << "current airspace: " << airspaceBuffer << "\n";
 
 				pthread_mutex_lock(&mutex);
-				// erase previous airspace content
-				//ftruncate(shm_airspace, SIZE_SHM_AIRSPACE);
-
 				// write new flying planes list
-				sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
+				sprintf((char *)ptr_flyingPlanes, "%s", currentAirspace.c_str());
 
 				// write new airspace to buffer
 				sprintf((char *)ptr_airspace, "%s", airspaceBuffer);
