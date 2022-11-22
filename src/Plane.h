@@ -24,7 +24,6 @@
 #include <time.h>
 
 #include "Timer.h"
-#include "PSR.h"
 
 #define OFFSET 1000000
 #define PLANE_PERIOD 1000000
@@ -78,6 +77,7 @@ public:
 		// instantiate filename
 		fileName = "plane_" + std::to_string(ID);
 
+
 //		printf("Plane %i filename: %s\n", ID, fileName.c_str());
 
 		// open shm object
@@ -99,6 +99,7 @@ public:
 
 		// update string of plane data
 		updateString();
+
 
 		// initial write
 		sprintf((char* )ptr, "%s", planeString.c_str());
@@ -201,10 +202,10 @@ public:
 
 	// stringify plane data members
 	void updateString(){
-		std::string s = " ";
-		planeString = std::to_string(ID) + " " + std::to_string(arrivalTime) + " " +
-				std::to_string(position[0]) + " " + std::to_string(position[1]) + " " + std::to_string(position[2]) + " " +
-				std::to_string(speed[0]) + " " + std::to_string(speed[1]) + " " + std::to_string(speed[2]) + "\n";
+		std::string s = ",";
+		planeString = std::to_string(ID) + s + std::to_string(arrivalTime) + s +
+				std::to_string(position[0]) + s + std::to_string(position[1]) + s + std::to_string(position[2]) + s +
+				std::to_string(speed[0]) + s + std::to_string(speed[1]) + s + std::to_string(speed[2]) + ";";
 	}
 
 	std::string getString(){
