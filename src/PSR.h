@@ -192,7 +192,7 @@ public:
 						move = true;
 
 						// add current fd to airspace fd vector
-						flyingFileNames.push_back(waitingFileNames.at(i));
+//						flyingFileNames.push_back(waitingFileNames.at(i));
 
 						// remove current fd from waiting planes fd vector
 						waitingFileNames.erase(waitingFileNames.begin() + i);
