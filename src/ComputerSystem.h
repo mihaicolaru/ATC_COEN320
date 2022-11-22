@@ -20,17 +20,6 @@
 
 #include "Plane.h"
 #include "Timer.h"
-
-#define PSR_PERIOD 5000000
-#define SSR_PERIOD 5000000
-
-#define SPACE_X_MIN 0
-#define SPACE_X_MAX 100000
-#define SPACE_Y_MIN 0
-#define SPACE_Y_MAX 100000
-#define SPACE_Z_MIN 0
-#define SPACE_Z_MAX 25000
-#define SPACE_ELEVATION 15000
 #include "Display.h"
 
 class Plane;
@@ -122,7 +111,6 @@ private:
 	// display list
 	int shm_displayData;
 	void *ptr_positionData;
-	std::vector<std::string>
 
 	// waiting planes list
 	int shm_waitingPlanes;

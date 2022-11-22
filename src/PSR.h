@@ -18,16 +18,17 @@
 #include <unistd.h>
 #include <vector>
 
+#include "SSR.h"
 #include "Plane.h"
 #include "Timer.h"
 
 #define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
-#define SIZE_SHM_SSR 4096
-#define PSR_PERIOD 5000000
+#define PSR_PERIOD 2000000
 
 // forward declaration
 class Plane;
+class SSR;
 
 class PSR {
 public:
@@ -127,15 +128,15 @@ public:
 		}
 
 		// open ssr shm
-		shm_airspace = shm_open("flying_planes", O_RDWR, 0666);
-		if (shm_airspace == -1) {
+		shm_flyingPlanes = shm_open("flying_planes", O_RDWR, 0666);
+		if (shm_flyingPlanes == -1) {
 			perror("in shm_open() ATC: airspace");
 			exit(1);
 		}
 
 		// map shm
-		ptr_airspace = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if (ptr_airspace == MAP_FAILED) {
+		ptr_flyingPlanes = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
+		if (ptr_flyingPlanes == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
@@ -143,7 +144,7 @@ public:
 		return 0;
 	}
 
-	int start() {
+	void start() {
 		//		std::cout << "PSR start called\n";
 		time(&at);
 		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
@@ -185,13 +186,10 @@ public:
 					char readChar = *((char *)ptr);
 
 					if(readChar == 't'){
-						// remove and send to ssr
+						// remove and update ssr
 //						std::cout << "terminated\n";
 
 						move = true;
-
-						// add current fd to airspace fd vector
-						airspaceFileNames.push_back(waitingFileNames.at(i));
 
 						// remove current fd from waiting planes fd vector
 						waitingFileNames.erase(waitingFileNames.begin() + i);
@@ -202,10 +200,6 @@ public:
 						i--;	// reduce number of planes
 					}
 					else{
-						// find current id
-						int curr_id = atoi((char *)ptr);
-//						printf("current id: %i\n", curr_id);
-
 						// find first comma after the ID
 						int j = 0;
 						for(; j < 4; j++){
@@ -228,7 +222,7 @@ public:
 							move = true;
 
 							// add current fd to airspace fd vector
-							airspaceFileNames.push_back(waitingFileNames.at(i));
+							flyingFileNames.push_back(waitingFileNames.at(i));
 
 							// remove current fd from waiting planes fd vector
 							waitingFileNames.erase(waitingFileNames.begin() + i);
@@ -255,7 +249,7 @@ public:
 
 					int i = 0;
 					while(i < SIZE_SHM_SSR){
-						char readChar = *((char *)ptr_airspace + i);
+						char readChar = *((char *)ptr_flyingPlanes + i);
 
 						if(readChar == ';'){
 							// termination character found
@@ -267,7 +261,7 @@ public:
 					}
 
 					// add planes to transfer
-					for(std::string filename : airspaceFileNames){
+					for(std::string filename : flyingFileNames){
 						if(i == 0){
 							currentAirspace += filename;
 							i++;
@@ -279,11 +273,15 @@ public:
 					}
 					currentAirspace += ";";
 
+					pthread_mutex_lock(&mutex);
+
 					// write new airspace to shm
-					sprintf((char *)ptr_airspace , "%s", currentAirspace.c_str());
+					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
 
 					//					printf("airspace after move: %s\n", ptr_airspace);
-					airspaceFileNames.clear();
+					flyingFileNames.clear();
+
+					pthread_mutex_unlock(&mutex);
 				}
 
 				// check for PSR termination
@@ -323,9 +321,9 @@ private:
 	std::vector<void *> planePtrs;
 
 	// airspace list
-	int shm_airspace;
-	void *ptr_airspace;
-	std::vector<std::string> airspaceFileNames;
+	int shm_flyingPlanes;
+	void *ptr_flyingPlanes;
+	std::vector<std::string> flyingFileNames;
 
 	friend class Plane;
 };

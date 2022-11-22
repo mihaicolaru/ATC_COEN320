@@ -24,7 +24,6 @@
 #include <time.h>
 
 #include "Timer.h"
-#include "PSR.h"
 
 #define OFFSET 1000000
 #define PLANE_PERIOD 1000000

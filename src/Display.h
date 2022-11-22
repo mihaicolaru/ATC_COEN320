@@ -165,7 +165,8 @@ public:
 		int rcvid;
 		Message msg;
 
-		while(1){
+		int i = 1;
+		while(i-- > 0){
 //			printMap();
 //			printHeight();
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
