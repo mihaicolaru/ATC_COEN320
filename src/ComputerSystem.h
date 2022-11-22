@@ -122,7 +122,6 @@ private:
 	// display list
 	int shm_displayData;
 	void *ptr_positionData;
-	std::vector<std::string>
 
 	// waiting planes list
 	int shm_waitingPlanes;

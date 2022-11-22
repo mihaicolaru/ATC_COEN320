@@ -24,6 +24,8 @@
 #include "Plane.h"
 #include "Timer.h"
 #include "Display.h"
+#include "PSR.h"
+#include "SSR.h"
 
 #define PSR_PERIOD 5000000
 #define SSR_PERIOD 5000000
@@ -73,11 +75,11 @@ public:
 		// save file descriptors to shm
 		int i = 0;
 		for (Plane *plane : planes) {
-//			printf("initialize: %s\n", plane->getFD());
+			//			printf("initialize: %s\n", plane->getFD());
 
 			sprintf((char *)waitingPtr + i, "%s,", plane->getFD());
 
-//			printf("length of planeFD: %zu\n", strlen(plane->getFD()));
+			//			printf("length of planeFD: %zu\n", strlen(plane->getFD()));
 
 			// move index
 			i += (strlen(plane->getFD()) + 1);
@@ -85,27 +87,48 @@ public:
 		}
 		sprintf((char *)waitingPtr + i - 1, ";");	// file termination character
 
-		// initialize shm for airspace (contains no planes)
-		shm_airspace = shm_open("flying_planes", O_CREAT | O_RDWR, 0666);
+		// initialize shm for flying planes (contains no planes)
+		shm_flyingPlanes = shm_open("flying_planes", O_CREAT | O_RDWR, 0666);
+		if (shm_flyingPlanes == -1) {
+			perror("in shm_open() ATC: flying planes");
+			exit(1);
+		}
+
+		// set shm size
+		ftruncate(shm_flyingPlanes, SIZE_SHM_SSR);
+
+		// map shm
+		flyingPtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
+		if (flyingPtr == MAP_FAILED) {
+			printf("map failed flying planes\n");
+			return -1;
+		}
+		sprintf((char *)flyingPtr, ";");
+
+		// create PSR object with number of planes
+		PSR *current_psr = new PSR(planes.size());
+		psr = current_psr;
+
+		// initialize shm for airspace (compsys <-> ssr)
+		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
 		if (shm_airspace == -1) {
 			perror("in shm_open() ATC: airspace");
 			exit(1);
 		}
 
 		// set shm size
-		ftruncate(shm_airspace, SIZE_SHM_SSR);
+		ftruncate(shm_airspace, SIZE_SHM_AIRSPACE);
 
 		// map shm
-		airspacePtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if (airspacePtr == MAP_FAILED) {
+		airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+		if (waitingPtr == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
 		sprintf((char *)airspacePtr, ";");
 
-		// create PSR object with number of planes
-		PSR *current_psr = new PSR(planes.size());
-		psr = current_psr;
+		SSR *current_ssr = new SSR(planes.size());
+		ssr = current_ssr;
 
 		/*Display's Shared Memory Initialization*/
 		// create shm of planes to display
@@ -139,6 +162,7 @@ public:
 
 		// start threaded objects
 		psr->start();
+		ssr->start();
 		display->start();
 		for (Plane *plane : planes) {
 			plane->start();
@@ -152,6 +176,7 @@ public:
 		}
 
 		psr->stop();
+		ssr->stop();
 		display->stop();
 		return 0; // set to error code if any
 	}
@@ -179,10 +204,10 @@ protected:
 				arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
 				arrivalSpeedZ) {
 
-//			std::cout << ID << separator << arrivalTime << separator << arrivalCordX
-//					<< separator << arrivalCordY << separator << arrivalCordZ
-//					<< separator << arrivalSpeedX << separator << arrivalSpeedY
-//					<< separator << arrivalSpeedZ << std::endl;
+			//			std::cout << ID << separator << arrivalTime << separator << arrivalCordX
+			//					<< separator << arrivalCordY << separator << arrivalCordZ
+			//					<< separator << arrivalSpeedX << separator << arrivalSpeedY
+			//					<< separator << arrivalSpeedZ << std::endl;
 
 			int pos[3] = {arrivalCordX, arrivalCordY, arrivalCordZ};
 			int vel[3] = {arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ};
@@ -192,10 +217,10 @@ protected:
 			planes.push_back(plane);
 		}
 
-//		int i = 0;
-//		for (Plane *plane : planes) {
-//			printf("readinput: %s\n", plane->getFD());
-//		}
+		//		int i = 0;
+		//		for (Plane *plane : planes) {
+		//			printf("readinput: %s\n", plane->getFD());
+		//		}
 
 		return 0;
 	}
@@ -205,8 +230,12 @@ protected:
 	// planes
 	std::vector<Plane *> planes; // vector of plane objects
 
-	// psr
+	// primary radar
 	PSR *psr;
+
+	// secondary radar
+	SSR *ssr;
+
 
 	// Display
 	Display *display;
@@ -220,7 +249,11 @@ protected:
 	int shm_waitingPlanes;
 	void *waitingPtr;
 
-	// airspace
+	// flying planes
+	int shm_flyingPlanes;
+	void *flyingPtr;
+
+	// shm airspace
 	int shm_airspace;
 	void *airspacePtr;
 
