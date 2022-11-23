@@ -24,7 +24,7 @@
 #define SIZE_SHM_AIRSPACE 4096
 #define SIZE_SHM_SSR 4096
 #define SIZE_SHM_PSR 4096
-#define SSR_PERIOD 2000000
+#define SSR_PERIOD 5000000
 
 class Plane;
 
@@ -225,7 +225,7 @@ public:
 
 					if(readChar == 't'){
 						// remove plane (terminated)
-						std::cout << "terminated\n";
+//						std::cout << "SSR found terminated\n";
 
 						// remove current fd from flying planes fd vector
 						flyingFileNames.erase(flyingFileNames.begin() + i);
@@ -280,9 +280,9 @@ public:
 				// termination character for flying planes list
 				currentAirspace += ";";
 
-				std::cout << "current flying planes list: " << currentAirspace << "\n";
+				std::cout << "SSR current flying planes list: " << currentAirspace << "\n";
 
-				std::cout << "current airspace: " << airspaceBuffer << "\n";
+				std::cout << "SSR current airspace: " << airspaceBuffer << "\n";
 
 				pthread_mutex_lock(&mutex);
 				// write new flying planes list

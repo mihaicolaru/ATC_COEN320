@@ -24,7 +24,7 @@
 
 #define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 2000000
+#define PSR_PERIOD 5000000
 
 // forward declaration
 class Plane;

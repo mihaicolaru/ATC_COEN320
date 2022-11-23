@@ -26,6 +26,7 @@
 #include "Display.h"
 #include "PSR.h"
 #include "SSR.h"
+#include "ComputerSystem.h"
 
 #define SPACE_X_MIN 0
 #define SPACE_X_MAX 100000
@@ -56,6 +57,7 @@ public:
 		delete psr;
 		delete ssr;
 		delete display;
+		delete computerSystem;
 
 	}
 
@@ -144,10 +146,10 @@ public:
 		int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
 
 		// set shm size
-		ftruncate(shm_display, SIZE_DISPLAY);
+		ftruncate(shm_display, SIZE_SHM_DISPLAY);
 
 		// map the memory
-		void *ptr = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		void *ptr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
 		if (ptr== MAP_FAILED) {
 			printf("Display ptr failed mapping\n");
 			return -1;
@@ -164,6 +166,12 @@ public:
 		}
 		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
 		display = newDisplay;
+
+
+		ComputerSystem *newCS = new ComputerSystem();
+		computerSystem = newCS;
+
+
 		return 0; // set to error code if any
 	}
 
@@ -173,6 +181,7 @@ public:
 		psr->start();
 		ssr->start();
 		display->start();
+		computerSystem->start();
 		for (Plane *plane : planes) {
 			plane->start();
 		}
@@ -187,6 +196,8 @@ public:
 		psr->stop();
 		ssr->stop();
 		display->stop();
+		computerSystem->stop();
+
 		return 0; // set to error code if any
 	}
 
@@ -246,8 +257,11 @@ protected:
 	SSR *ssr;
 
 
-	// Display
+	// display
 	Display *display;
+
+	// computer system
+	ComputerSystem *computerSystem;
 
 	// timers
 	time_t startTime;
