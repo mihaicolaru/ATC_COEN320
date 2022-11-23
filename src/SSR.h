@@ -128,27 +128,27 @@ public:
 				pthread_mutex_lock(&mutex);
 				for(int i = 0; i < SIZE_SHM_SSR; i++){
 					char readChar = *((char *)ptr_flyingPlanes + i);
-//					std::cout << "buffer: " << FD_buffer << "\n";
+					std::cout << "buffer: " << FD_buffer << "\n";
 
 					if(readChar == ';'){
 						if(i == 0){
-//							std::cout << "ssr no flying planes\n";
+							std::cout << "ssr no flying planes\n";
 							break;	// no flying planes
 						}
 
-//						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
+						std::cout << "SSR found a planeFD: " << FD_buffer << "\n";
 
 						bool inFile = true;
 
 						for(std::string filename : flyingFileNames){
 							if(filename == FD_buffer){
-//								std::cout << FD_buffer << " already in list\n";
+								std::cout << FD_buffer << " already in list\n";
 								inFile = false;
 							}
 						}
 
 						if(inFile){
-//							std::cout << "added: " << FD_buffer << "\n";
+							std::cout << "added: " << FD_buffer << "\n";
 							flyingFileNames.push_back(FD_buffer);
 
 							// open shm for current plane
