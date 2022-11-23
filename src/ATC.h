@@ -168,7 +168,7 @@ public:
 		display = newDisplay;
 
 
-		ComputerSystem *newCS = new ComputerSystem();
+		ComputerSystem *newCS = new ComputerSystem(planes.size());
 		computerSystem = newCS;
 
 

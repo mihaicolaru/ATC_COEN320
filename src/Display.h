@@ -142,7 +142,7 @@ public:
 
 	bool stop(){
 		pthread_join(displayThread, NULL);
-		std::cout << "Display terminated\n";
+//		std::cout << "Display terminated\n";
 		return 0;
 	}
 
