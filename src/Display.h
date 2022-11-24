@@ -30,7 +30,6 @@
 
 #include "Limits.h"
 
-
 const int block_count = (int)MARGIN/(int)SCALER;
 
 //need sporadic task?
@@ -46,7 +45,7 @@ public:
 	}
 	//destructor
 	~Display(){
-
+		shm_unlink("display");
 	}
 
 	//Initialize thread
@@ -77,7 +76,7 @@ public:
 		}
 //		printf("finished reading to displayData\n");
 
-		ptr_positionData = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
+		ptr_positionData = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
 
 		if (ptr_positionData == MAP_FAILED) {
 
@@ -95,6 +94,7 @@ public:
 			char readChar = *((char *)ptr_positionData + i);
 			if(readChar == ',' || readChar == ';'){
 				if(buffer.length() >0){
+					std::cout << "display buffer: " << buffer << "\n";
 					switch(axis){
 					case 0:
 						posX[planeNb]= stoi(buffer);
@@ -138,7 +138,7 @@ public:
 
 	bool stop(){
 		pthread_join(displayThread, NULL);
-		std::cout << "Display terminated\n";
+//		std::cout << "Display terminated\n";
 		return 0;
 	}
 
