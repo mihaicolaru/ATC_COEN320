@@ -21,10 +21,7 @@
 #include "Plane.h"
 #include "Timer.h"
 
-#define SIZE_SHM_AIRSPACE 4096
-#define SIZE_SHM_SSR 4096
-#define SIZE_SHM_PSR 4096
-#define SSR_PERIOD 3000000
+#include "Limits.h"
 
 class Plane;
 

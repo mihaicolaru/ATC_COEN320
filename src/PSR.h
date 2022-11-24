@@ -21,10 +21,8 @@
 #include "SSR.h"
 #include "Plane.h"
 #include "Timer.h"
+#include "Limits.h"
 
-#define SIZE_SHM_PLANES 4096
-#define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 3000000
 
 // forward declaration
 class Plane;

@@ -24,19 +24,7 @@
 #include <time.h>
 
 #include "Timer.h"
-
-#define OFFSET 1000000
-#define PLANE_PERIOD 1000000
-
-#define SPACE_X_MIN 0
-#define SPACE_X_MAX 100000
-#define SPACE_Y_MIN 0
-#define SPACE_Y_MAX 100000
-#define SPACE_Z_MIN 0
-#define SPACE_Z_MAX 25000
-#define SPACE_ELEVATION 15000
-
-#define SIZE_SHM_PLANES 4096
+#include "Limits.h"
 
 class Plane {
 public:

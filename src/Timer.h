@@ -17,22 +17,7 @@
 #include <sys/siginfo.h>
 #include <sys/neutrino.h>
 
-#define ONE_THOUSAND	1000
-#define ONE_MILLION		1000000
-
-// message send definitions
-
-// messages
-#define MT_WAIT_DATA        2       // message from client
-#define MT_SEND_DATA        3       // message from client
-
-// pulses
-#define CODE_TIMER          1       // pulse from timer
-
-// message reply definitions
-#define MT_OK               0       // message to client
-#define MT_TIMEDOUT         1       // message to client
-
+#include "Limits.h"
 // message structure
 typedef struct
 {
