@@ -20,7 +20,6 @@
 
 #include "Plane.h"
 #include "Timer.h"
-
 #include "Limits.h"
 
 class Plane;
@@ -93,7 +92,7 @@ public:
 	}
 
 	int stop() {
-		std::cout << "ssr stop called\n";
+//		std::cout << "ssr stop called\n";
 		pthread_join(SSRthread, NULL);
 		return 0;
 	}
@@ -350,7 +349,7 @@ public:
 
 				// check for termination
 				if(numPlanes <= 0){
-					std::cout << "ssr done\n";
+//					std::cout << "ssr done\n";
 					ChannelDestroy(chid);
 
 					return 0;

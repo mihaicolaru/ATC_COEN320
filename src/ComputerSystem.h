@@ -24,7 +24,7 @@
 #include "Display.h"
 #include "Limits.h"
 
-#define CS_PERIOD 3000000
+#define CS_PERIOD 2000000
 
 class Plane;
 
@@ -100,6 +100,7 @@ public:
 
 	// start computer system
 	int start(){
+//		std::cout << "computer system start called\n";
 		if (pthread_create(&computerSystemThread, &attr, &ComputerSystem::startComputerSystem, (void *)this) != EOK) {
 			computerSystemThread = NULL;
 		}
@@ -107,6 +108,7 @@ public:
 
 	// join computer system thread
 	int stop(){
+//		std::cout << "computer system stop called\n";
 		pthread_join(computerSystemThread, NULL);
 		return 0;
 	}
@@ -342,6 +344,9 @@ public:
 						printf("plane %i:\n", (*it)->id);
 						printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
 						printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+
+
+						// add plane to buffer for display
 
 						(*it)->keep = false;	// if found next time, this will become true again
 
