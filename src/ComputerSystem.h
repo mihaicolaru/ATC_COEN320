@@ -326,6 +326,8 @@ public:
 
 				// ================= print airspace info =================
 
+				std::string displayBuffer = "";
+				std::string currentPlaneBuffer = "";
 //				printf("airspace that was read: %s\n", ptr_airspace);
 				// print what was found, remove what is no longer in the airspace
 				auto it = flyingPlanesInfo.begin();
@@ -348,14 +350,25 @@ public:
 
 						// add plane to buffer for display
 
+						// id,posx,posy,posz,info
+						// ex: 1,15000,20000,5000,0
+//						currentPlaneBuffer += 0;
+
 						(*it)->keep = false;	// if found next time, this will become true again
 
 						// only increment if no plane to remove
 						++it;
 					}
+					displayBuffer += currentPlaneBuffer;
+					currentPlaneBuffer = "";
 				}
 				// ================= end print airspace =================
 
+				// ================= write to display shm =================
+
+				//lock mutex
+				//sprintf(ptr_display)
+				//unlock mutex
 
 			}
 
