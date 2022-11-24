@@ -65,7 +65,8 @@ public:
 		// read input from file
 		readInput();
 
-		/*Planes' Shared Memory Initialization*/
+//		std::cout << "atc initialize after readInput()\n";
+
 		// initialize shm for waiting planes (contains all planes)
 		shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
 		if (shm_waitingPlanes == -1) {
@@ -83,6 +84,8 @@ public:
 			return -1;
 		}
 
+//		std::cout << "atc initialize before writing waiting planes shm\n";
+
 		// save file descriptors to shm
 		int i = 0;
 		for (Plane *plane : planes) {
@@ -97,6 +100,8 @@ public:
 
 		}
 		sprintf((char *)waitingPtr + i - 1, ";");	// file termination character
+
+//		std::cout << "atc initialize after writing waiting planes shm\n";
 
 		// initialize shm for flying planes (contains no planes)
 		shm_flyingPlanes = shm_open("flying_planes", O_CREAT | O_RDWR, 0666);
@@ -116,9 +121,13 @@ public:
 		}
 		sprintf((char *)flyingPtr, ";");
 
+//		std::cout << "atc after writing flying planes shm\n";
+
 		// create PSR object with number of planes
 		PSR *current_psr = new PSR(planes.size());
 		psr = current_psr;
+
+//		std::cout << "atc psr created\n";
 
 		// initialize shm for airspace (compsys <-> ssr)
 		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
@@ -138,8 +147,12 @@ public:
 		}
 		sprintf((char *)airspacePtr, ";");
 
+//		std::cout << "atc after writing airspace shm\n";
+
 		SSR *current_ssr = new SSR(planes.size());
 		ssr = current_ssr;
+
+//		std::cout << "atc ssr created\n";
 
 		/*Display's Shared Memory Initialization*/
 		// create shm of planes to display
@@ -164,23 +177,28 @@ public:
 		for (int i = 0; i < sizeof(arrayString); i++) {
 			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
 		}
-		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
-		display = newDisplay;
 
+//		std::cout << "atc after writing display shm\n";
+
+//		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
+//		display = newDisplay;
+//		std::cout << "atc display created\n";
 
 		ComputerSystem *newCS = new ComputerSystem(planes.size());
 		computerSystem = newCS;
 
+//		std::cout << "atc compsys created\n";
 
 		return 0; // set to error code if any
 	}
 
 	int start() {
+//		std::cout << "atc start called\n";
 
 		// start threaded objects
 		psr->start();
 		ssr->start();
-		display->start();
+//		display->start();
 		computerSystem->start();
 		for (Plane *plane : planes) {
 			plane->start();
@@ -195,7 +213,7 @@ public:
 
 		psr->stop();
 		ssr->stop();
-		display->stop();
+//		display->stop();
 		computerSystem->stop();
 
 		return 0; // set to error code if any
@@ -203,6 +221,7 @@ public:
 
 protected:
 	int readInput() {
+//		std::cout << "atc readinput\n";
 		// open input.txt
 		std::string filename = "./input.txt";
 		std::ifstream input_file_stream;
@@ -218,6 +237,8 @@ protected:
 		arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ;
 
 		std::string separator = " ";
+
+//		std::cout << "atc before parse\n";
 
 		// parse input.txt to create plane objects
 		while (input_file_stream >> ID >> arrivalTime >> arrivalCordX >>
@@ -236,6 +257,8 @@ protected:
 			Plane *plane = new Plane(ID, arrivalTime, pos, vel);
 			planes.push_back(plane);
 		}
+
+//		std::cout << "atc after parse\n";
 
 		//		int i = 0;
 		//		for (Plane *plane : planes) {

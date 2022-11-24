@@ -24,7 +24,7 @@
 
 #define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 2000000
+#define PSR_PERIOD 1000000
 
 // forward declaration
 class Plane;
@@ -188,6 +188,8 @@ public:
 
 				int i = 0;
 				pthread_mutex_lock(&mutex);
+
+				// ================= read waiting planes shm =================
 				auto it = planePtrs.begin();
 				while(it != planePtrs.end()){
 //					char readChar = *((char *)*it);
@@ -201,7 +203,7 @@ public:
 					}
 
 					// extract arrival time
-					int curr_arrival_time = atoi((char *)*it + j + 1);
+					int curr_arrival_time = atoi((char *)(*it) + j + 1);
 					//						std::cout << "current plane arrival time: " << curr_arrival_time << "\n";
 
 					// compare with current time
@@ -232,6 +234,7 @@ public:
 						++it;
 					}
 				}
+				// ================= end read waiting planes =================
 
 
 //				std::cout << "psr waiting planes buffer:\n";
@@ -247,6 +250,11 @@ public:
 				//				pthread_mutex_unlock(&mutex);
 
 
+
+
+				// ================= write to flying planes shm =================
+
+
 				// if planes to be moved are found, write to flying planes shm
 				if(move){
 					//					pthread_mutex_lock(&mutex);
@@ -260,6 +268,8 @@ public:
 					std::string currentPlane = "";
 
 					int i = 0;
+
+					// ================= read current to flying planes shm =================
 					while(i < SIZE_SHM_SSR){
 						char readChar = *((char *)ptr_flyingPlanes + i);
 
@@ -321,9 +331,11 @@ public:
 						currentPlane += readChar;
 						i++;
 					}
+					// ================= end read current flying planes =================
 
 //					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
 
+					// ================= add planes to transfer buffer =================
 					// add planes to transfer
 					i = 0;
 					for(std::string filename : flyingFileNames){
@@ -337,22 +349,31 @@ public:
 						}
 					}
 					currentAirspace += ";";
+					// ================= end add planes to buffer =================
 
 //					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
 
 
+					// ================= write to flying planes shm =================
 					//					pthread_mutex_lock(&mutex);
 
 					// write new flying planes list to shm
 					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
 //					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+					// ================= end write =================
 					//					pthread_mutex_unlock(&mutex);
 				}
+
+				// ================= end write to flying planes =================
+
+
 
 				// clear buffer for next flying planes list
 				flyingFileNames.clear();
 
 				pthread_mutex_unlock(&mutex);
+
+
 				// check for PSR termination
 				if(numWaitingPlanes <= 0){
 //					std::cout << "psr done\n";

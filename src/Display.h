@@ -99,6 +99,7 @@ public:
 			char readChar = *((char *)ptr_positionData + i);
 			if(readChar == ',' || readChar == ';'){
 				if(buffer.length() >0){
+					std::cout << "display buffer: " << buffer << "\n";
 					switch(axis){
 					case 0:
 						posX[planeNb]= stoi(buffer);
