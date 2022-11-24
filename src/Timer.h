@@ -17,6 +17,7 @@
 #include <sys/siginfo.h>
 #include <sys/neutrino.h>
 
+#include "Limits.h"
 // message structure
 typedef struct
 {
