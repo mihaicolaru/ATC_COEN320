@@ -24,7 +24,7 @@
 
 #define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 1000000
+#define PSR_PERIOD 3000000
 
 // forward declaration
 class Plane;
@@ -42,9 +42,9 @@ public:
 	// destructor
 	~PSR() {
 
-		for(std::string filename : waitingFileNames){
-			shm_unlink(filename.c_str());
-		}
+		//		for(std::string filename : waitingFileNames){
+		//			shm_unlink(filename.c_str());
+		//		}
 		pthread_mutex_destroy(&mutex);
 	}
 
@@ -157,7 +157,7 @@ public:
 	}
 
 	int stop() {
-//		std::cout << "psr stop called\n";
+		//		std::cout << "psr stop called\n";
 		pthread_join(PSRthread, NULL);
 		return 0;
 	}
@@ -192,7 +192,7 @@ public:
 				// ================= read waiting planes shm =================
 				auto it = planePtrs.begin();
 				while(it != planePtrs.end()){
-//					char readChar = *((char *)*it);
+					//					char readChar = *((char *)*it);
 
 					// find first comma after the ID
 					int j = 0;
@@ -210,12 +210,12 @@ public:
 					// if t_arrival < t_current
 					time (&et);
 					double t_current = difftime(et,at);
-//					std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
+					//					std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
 
 					if(curr_arrival_time <= t_current){
 						move = true;
 
-//						std::cout << "psr found " << waitingFileNames.at(i) << " to move\n";
+						//						std::cout << "psr found " << waitingFileNames.at(i) << " to move\n";
 
 						// add current fd to airspace fd vector
 						flyingFileNames.push_back(waitingFileNames.at(i));
@@ -227,7 +227,7 @@ public:
 						it = planePtrs.erase(it);
 
 						numWaitingPlanes--;
-//						std::cout << "psr number of waiting planes: " << numWaitingPlanes << "\n";
+						//						std::cout << "psr number of waiting planes: " << numWaitingPlanes << "\n";
 					}
 					else{
 						i++;	// only increment if no plane to transfer
@@ -237,15 +237,15 @@ public:
 				// ================= end read waiting planes =================
 
 
-//				std::cout << "psr waiting planes buffer:\n";
-//				for(std::string name : waitingFileNames){
-//					std::cout << name << "\n";
-//				}
-//
-//				std::cout << "psr flying planes buffer:\n";
-//				for(std::string name : flyingFileNames){
-//					std::cout << name << "\n";
-//				}
+				//				std::cout << "psr waiting planes buffer:\n";
+				//				for(std::string name : waitingFileNames){
+				//					std::cout << name << "\n";
+				//				}
+				//
+				//				std::cout << "psr flying planes buffer:\n";
+				//				for(std::string name : flyingFileNames){
+				//					std::cout << name << "\n";
+				//				}
 
 				//				pthread_mutex_unlock(&mutex);
 
@@ -277,25 +277,25 @@ public:
 							// termination character found
 							if(i == 0){
 								// no planes
-//								std::cout << "PSR no current flying planes in shm\n";
+								//								std::cout << "PSR no current flying planes in shm\n";
 								break;
 							}
 
-//							printf("psr last plane: %s\n", currentPlane);
+							//							printf("psr last plane: %s\n", currentPlane);
 							// check if plane already in list
 							bool inList = true;
 
-//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+							//							std::cout << "checking if " << currentPlane << " already in flying list\n";
 							for(std::string name : flyingFileNames){
 								if(currentPlane == name){
 									inList = false;
-//									std::cout << currentPlane << " already in list\n";
+									//									std::cout << currentPlane << " already in list\n";
 									break;
 								}
 							}
 
 							if(inList){
-//								std::cout << "psr added " << currentPlane << "\n";
+								//								std::cout << "psr added " << currentPlane << "\n";
 								currentAirspace += currentPlane;
 								currentAirspace += ',';
 							}
@@ -305,20 +305,20 @@ public:
 						else if(readChar == ','){
 							// check if plane already in list
 
-//							printf("psr found plane: %s\n", currentPlane);
+							//							printf("psr found plane: %s\n", currentPlane);
 
 							bool inList = true;
-//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+							//							std::cout << "checking if " << currentPlane << " already in flying list\n";
 							for(std::string name : flyingFileNames){
 								if(currentPlane == name){
 									inList = false;
-//									std::cout << currentPlane << " already in list\n";
+									//									std::cout << currentPlane << " already in list\n";
 									break;
 								}
 							}
 
 							if(inList){
-//								std::cout << "psr added " << currentPlane << "\n";
+								//								std::cout << "psr added " << currentPlane << "\n";
 								currentAirspace += currentPlane;
 								currentAirspace += ',';
 							}
@@ -333,7 +333,7 @@ public:
 					}
 					// ================= end read current flying planes =================
 
-//					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
+					//					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
 
 					// ================= add planes to transfer buffer =================
 					// add planes to transfer
@@ -351,7 +351,7 @@ public:
 					currentAirspace += ";";
 					// ================= end add planes to buffer =================
 
-//					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
+					//					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
 
 
 					// ================= write to flying planes shm =================
@@ -359,7 +359,7 @@ public:
 
 					// write new flying planes list to shm
 					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
-//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+					//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
 					// ================= end write =================
 					//					pthread_mutex_unlock(&mutex);
 				}
@@ -376,7 +376,7 @@ public:
 
 				// check for PSR termination
 				if(numWaitingPlanes <= 0){
-//					std::cout << "psr done\n";
+					//					std::cout << "psr done\n";
 					ChannelDestroy(chid);
 					return 0;
 				}

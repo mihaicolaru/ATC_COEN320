@@ -56,7 +56,7 @@ public:
 		}
 		delete psr;
 		delete ssr;
-		delete display;
+//		delete display;
 		delete computerSystem;
 
 	}

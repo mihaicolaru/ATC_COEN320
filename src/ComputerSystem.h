@@ -23,7 +23,7 @@
 #include "Timer.h"
 #include "Display.h"
 
-#define CS_PERIOD 1000000
+#define CS_PERIOD 3000000
 
 class Plane;
 
@@ -51,7 +51,7 @@ public:
 	}
 
 	int initialize(){
-		// initialize
+		// initialize thread members
 
 		// set threads in detached state
 		int rc = pthread_attr_init(&attr);
@@ -63,6 +63,9 @@ public:
 		if (rc){
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
+
+
+		// shared memory members
 
 		// shared memory from ssr for the airspace
 		shm_airspace = shm_open("airspace", O_RDONLY, 0666);
@@ -145,22 +148,22 @@ public:
 					if(readChar == ';'){
 						// i=0 no planes found
 						if(i == 0){
-							std::cout << "compsys no flying planes\n";
+//							std::cout << "compsys no flying planes\n";
 							break;
 						}
 
 						// load last field in buffer
 						vel[2] = atoi(readBuffer.c_str());
-						std::cout << "compsys found last plane " << id << "\n";
+//						std::cout << "compsys found last plane " << id << "\n";
 
 						// check if already in airspace, if yes update with current data
 						bool inList = false;
 						for(aircraft *craft : flyingPlanesInfo){
-							std::cout << "target plane id: " << id << "\n";
-							std::cout << "current plane: " << craft->id << "\n";
+//							std::cout << "target plane id: " << id << "\n";
+//							std::cout << "current plane: " << craft->id << "\n";
 
 							if(craft->id == id){
-								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 								// TODO: implement check of current position with predicted position
 
 								// if found, update with current info
@@ -175,17 +178,17 @@ public:
 								// it is already in the list, do not add new
 								inList = true;
 
-								std::cout << "compsys plane " << craft->id << " new values:\n"
-										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-										<< "set keep value to: " << craft->keep << "\n";
+//								std::cout << "compsys plane " << craft->id << " new values:\n"
+//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
+//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
+//										<< "set keep value to: " << craft->keep << "\n";
 								break;
 							}
 						}
 
 						// if plane was not already in the list, add it
 						if(!inList){
-							std::cout << "compsys found new plane " << id << "\n";
+//							std::cout << "compsys found new plane " << id << "\n";
 							// new pointer to struct, set members from read
 							aircraft *currentAircraft = new aircraft();
 							currentAircraft->id = id;
@@ -206,16 +209,16 @@ public:
 					else if(readChar == '/'){
 						// load last value in buffer
 						vel[2] = atoi(readBuffer.c_str());
-						std::cout << "compsys found next plane " << id << "\n";
+//						std::cout << "compsys found next plane " << id << "\n";
 
 						// check if already in airspace, if yes update with current data
 						bool inList = false;
 						for(aircraft *craft : flyingPlanesInfo){
-							std::cout << "target plane id: " << id << "\n";
-							std::cout << "current plane: " << craft->id << "\n";
+//							std::cout << "target plane id: " << id << "\n";
+//							std::cout << "current plane: " << craft->id << "\n";
 
 							if(craft->id == id){
-								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 								// TODO: implement check of current position with predicted position
 
 								// if found, update with current info
@@ -230,10 +233,10 @@ public:
 								// if already in list, do not add new
 								inList = true;
 
-								std::cout << "compsys plane " << craft->id << " new values:\n"
-										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-										<< "set keep value to: " << craft->keep << "\n";
+//								std::cout << "compsys plane " << craft->id << " new values:\n"
+//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
+//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
+//										<< "set keep value to: " << craft->keep << "\n";
 								break;
 							}
 						}
@@ -241,7 +244,7 @@ public:
 						// if plane was not already in the list, add it
 						if(!inList){
 							// new pointer to struct, set members from read
-							std::cout << "compsys found new plane " << id << "\n";
+//							std::cout << "compsys found new plane " << id << "\n";
 							aircraft *currentAircraft = new aircraft();
 							currentAircraft->id = id;
 							currentAircraft->t_arrival = arrTime;
@@ -320,15 +323,15 @@ public:
 
 				// ================= print airspace info =================
 
-				printf("airspace that was read: %s\n", ptr_airspace);
+//				printf("airspace that was read: %s\n", ptr_airspace);
 				// print what was found, remove what is no longer in the airspace
 				auto it = flyingPlanesInfo.begin();
 				while(it != flyingPlanesInfo.end()){
-					std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+//					std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 					bool temp = (*it)->keep;	// check if plane was terminated
 
 					if(!temp){
-						std::cout << "compsys found plane " << (*it)->id << " terminated\n";
+//						std::cout << "compsys found plane " << (*it)->id << " terminated\n";
 						it = flyingPlanesInfo.erase(it);
 						numPlanes--;
 						std::cout << "computer system number of planes left: " << numPlanes << "\n";
