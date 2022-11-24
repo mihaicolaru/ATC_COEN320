@@ -189,7 +189,7 @@ public:
 				pthread_mutex_lock(&mutex);
 				auto it = planePtrs.begin();
 				while(it != planePtrs.end()){
-					char readChar = *((char *)*it);
+//					char readChar = *((char *)*it);
 
 					// find first comma after the ID
 					int j = 0;
@@ -344,7 +344,7 @@ public:
 
 					// write new flying planes list to shm
 					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
-//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
 					//					pthread_mutex_unlock(&mutex);
 				}
 
