@@ -23,7 +23,7 @@
 #include "Timer.h"
 #include "Display.h"
 
-#define CS_PERIOD 5000000
+#define CS_PERIOD 4000000
 
 class Plane;
 
@@ -124,178 +124,180 @@ public:
 
 		while(1){
 			if(rcvid == 0){
-//
-//				//				pthread_mutex_lock(&mutex);
-//				//				printf("cs read airspace:\n");
-//				//				for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
-//				//					char readChar = *((char *)ptr_airspace + i);
-//				//					if(readChar == ';'){
-//				//						break;
-//				//					}
-//				//					printf("%c", (void *)readChar);
-//				//				}
-//				//				printf("\n");
-//				//				pthread_mutex_unlock(&mutex);
-//
-//				// read airspace shm
-//				std::string readBuffer = "";
-//				int j = 0;
-//				aircraft currentAircraft;
-//
-//				for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
-//					char readChar = *((char *)ptr_airspace + i);
-//
-//					if(readChar == ';'){
-//						// end of airspace shm
-//						if(i == 0){
-//							break;	// no planes
-//						}
-//						// load last field in plane
-//						// found plane
-//						//						std::cout << "found last plane: " << readBuffer << "\n";
-//						currentAircraft.vel[2] = atoi(readBuffer.c_str());
-//
-//						// check if already in airspace, if yes compare with current frame data
-//						bool inList = true;
-//						for(aircraft craft : flyingPlanesInfo){
-//							if(craft.id == currentAircraft.id){
-//								// TODO: implement check of current position with predicted position
-//
-//								craft.pos[0] = currentAircraft.pos[0];
-//								craft.pos[1] = currentAircraft.pos[1];
-//								craft.pos[2] = currentAircraft.pos[2];
-//								craft.vel[0] = currentAircraft.vel[0];
-//								craft.vel[1] = currentAircraft.vel[1];
-//								craft.vel[2] = currentAircraft.vel[2];
-//								// if found, keep, if not will be removed
-//								inList = false;
-//								craft.keep = true;
-//							}
-//						}
-//
-//						// if plane was not already in the list, add it
-//						if(inList){
-//							currentAircraft.keep = true;	// keep for first computation
-//							flyingPlanesInfo.push_back(currentAircraft);
-//						}
-//
-//						break;
-//					}
-//					else if(readChar == '/'){
-//						// found plane
-//						//						std::cout << "found next plane: " << readBuffer << "\n";
-//						currentAircraft.vel[2] = atoi(readBuffer.c_str());
-//
-//						// check if already in airspace, if yes compare with current frame data
-//						bool inList = true;
-//						for(aircraft craft : flyingPlanesInfo){
-//							if(craft.id == currentAircraft.id){
-//								// TODO: implement check of current position with predicted position
-//
-//								craft.pos[0] = currentAircraft.pos[0];
-//								craft.pos[1] = currentAircraft.pos[1];
-//								craft.pos[2] = currentAircraft.pos[2];
-//								craft.vel[0] = currentAircraft.vel[0];
-//								craft.vel[1] = currentAircraft.vel[1];
-//								craft.vel[2] = currentAircraft.vel[2];
-//
-//								craft.keep = true;
-//								inList = false;
-//							}
-//						}
-//
-//						// if plane was not already in the list, add it
-//						if(inList){
-//							currentAircraft.keep = true;	// keep for first computation
-//							flyingPlanesInfo.push_back(currentAircraft);
-//						}
-//
-//						// reset buffer and index for next plane
-//						readBuffer = "";
-//						j = 0;
-//						continue;
-//					}
-//					else if(readChar == ','){
-//						// found next plane data field
-//						//						std::cout << "found next plane field data: " << readBuffer << "\n";
-//
-//						switch(j){
-//						case 0:
-//							currentAircraft.id = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 1:
-//							currentAircraft.t_arrival = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 2:
-//							currentAircraft.pos[0] = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 3:
-//							currentAircraft.pos[1] = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 4:
-//							currentAircraft.pos[2] = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 5:
-//							currentAircraft.vel[0] = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//						case 6:
-//							currentAircraft.vel[1] = atoi(readBuffer.c_str());
-//							readBuffer = "";
-//							j++;
-//							continue;
-//							//						case 7:
-//							//							currentAircraft.vel[2] = atoi(readBuffer.c_str());
-//							//							readBuffer = "";
-//							//							j++;
-//							//							continue;
-//						default:
-//							// do nothing
-//							readBuffer = "";
-//							break;
-//						}
-//					}
-//					readBuffer += readChar;
-//				}
-//
-//				//				printf("computer system read airspace:\n");
-//
-//				// print what was found
-//				int i = 0;
-//				auto it = flyingPlanesInfo.begin();
-//				while(it != flyingPlanesInfo.end()){
-//					bool temp = *it.keep;
-//					if(temp){
-//						it = flyingPlanesInfo.erase(it);
-//						numPlanes--;
-//					}
-//					else{
-//						//						printf("plane %i:\n", craft.id);
-//						//						printf("posx: %i, posy: %i, posz: %i\n", craft.pos[0], craft.pos[1], craft.pos[2]);
-//						//						printf("velx: %i, vely: %i, velz: %i\n", craft.vel[0], craft.vel[1], craft.vel[2]);
-//
-//						*it.keep = false;
-//						i++;
-//						++it;
-//					}
-//				}
-//
-//			}
-//
-//			if(numPlanes <= 0){
-//				ChannelDestroy(chid);
-//				return 0;
+
+				// read airspace shm
+				std::string readBuffer = "";
+				int j = 0;
+				aircraft currentAircraft;
+
+				for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
+					char readChar = *((char *)ptr_airspace + i);
+
+					if(readChar == ';'){
+						// end of airspace shm
+						if(i == 0){
+							std::cout << "compsys no flying planes\n";
+							break;	// no planes
+						}
+						// load last field in plane
+						// found plane
+						currentAircraft.vel[2] = atoi(readBuffer.c_str());
+						std::cout << "compsys found last plane " << currentAircraft.id << "\n";
+
+						// check if already in airspace, if yes compare with current frame data
+						bool inList = true;
+						for(aircraft craft : flyingPlanesInfo){
+							if(craft.id == currentAircraft.id){
+								std::cout << "compsys: plane " << craft.id << " already in list, updating new values\n";
+								// TODO: implement check of current position with predicted position
+
+								// if found, update with current info
+								craft.pos[0] = currentAircraft.pos[0];
+								craft.pos[1] = currentAircraft.pos[1];
+								craft.pos[2] = currentAircraft.pos[2];
+								craft.vel[0] = currentAircraft.vel[0];
+								craft.vel[1] = currentAircraft.vel[1];
+								craft.vel[2] = currentAircraft.vel[2];
+								// if found, keep, if not will be removed
+								inList = false;
+								craft.keep = true;
+							}
+						}
+
+						// if plane was not already in the list, add it
+						if(inList){
+							std::cout << "compsys found new plane " << currentAircraft.id << "\n";
+							currentAircraft.keep = true;	// keep for first computation
+							flyingPlanesInfo.push_back(currentAircraft);
+						}
+
+						break;
+					}
+					else if(readChar == '/'){
+						// found plane
+						currentAircraft.vel[2] = atoi(readBuffer.c_str());
+						std::cout << "compsys found next plane " << currentAircraft.id << "\n";
+
+						// check if already in airspace, if yes compare with current frame data
+						bool inList = true;
+						for(aircraft craft : flyingPlanesInfo){
+							if(craft.id == currentAircraft.id){
+								// TODO: implement check of current position with predicted position
+								std::cout << "compsys: plane " << craft.id << " already in list, updating new values\n";
+								craft.pos[0] = currentAircraft.pos[0];
+								craft.pos[1] = currentAircraft.pos[1];
+								craft.pos[2] = currentAircraft.pos[2];
+								craft.vel[0] = currentAircraft.vel[0];
+								craft.vel[1] = currentAircraft.vel[1];
+								craft.vel[2] = currentAircraft.vel[2];
+
+								// if found, keep, if not will be removed
+								craft.keep = true;
+								inList = false;
+							}
+						}
+
+						// if plane was not already in the list, add it
+						if(inList){
+							std::cout << "compsys found new plane " << currentAircraft.id << "\n";
+							currentAircraft.keep = true;	// keep for first computation
+							flyingPlanesInfo.push_back(currentAircraft);
+						}
+
+						// reset buffer and index for next plane
+						readBuffer = "";
+						j = 0;
+						continue;
+					}
+					else if(readChar == ','){
+						// found next plane data field
+						//						std::cout << "found next plane field data: " << readBuffer << "\n";
+
+						switch(j){
+						case 0:
+							currentAircraft.id = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 1:
+							currentAircraft.t_arrival = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 2:
+							currentAircraft.pos[0] = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 3:
+							currentAircraft.pos[1] = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 4:
+							currentAircraft.pos[2] = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 5:
+							currentAircraft.vel[0] = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+						case 6:
+							currentAircraft.vel[1] = atoi(readBuffer.c_str());
+							readBuffer = "";
+							j++;
+							continue;
+							//						case 7:
+							//							currentAircraft.vel[2] = atoi(readBuffer.c_str());
+							//							readBuffer = "";
+							//							j++;
+							//							continue;
+						default:
+							// do nothing
+							readBuffer = "";
+							break;
+						}
+					}
+					readBuffer += readChar;
+				}
+
+				printf("computer system read airspace: %s\n", ptr_airspace);
+
+				// print what was found
+				//				int i = 0;
+				auto it = flyingPlanesInfo.begin();
+				while(it != flyingPlanesInfo.end()){
+					bool temp = (*it).keep;	// check if plane was terminated
+
+					if(!temp){
+						std::cout << "compsys found plane " << (*it).id << " terminated\n";
+						it = flyingPlanesInfo.erase(it);
+						numPlanes--;
+						std::cout << "computer system number of planes left: " << numPlanes << "\n";
+					}
+					else{
+						printf("plane %i:\n", (*it).id);
+						printf("posx: %i, posy: %i, posz: %i\n", (*it).pos[0], (*it).pos[1], (*it).pos[2]);
+						printf("velx: %i, vely: %i, velz: %i\n", (*it).vel[0], (*it).vel[1], (*it).vel[2]);
+
+						(*it).keep = false;	// if found next time, this will become true again
+
+						// only increment if no plane to remove
+						//						i++;
+						++it;
+					}
+				}
+
+			}
+
+
+			// termination check
+			if(numPlanes <= 0){
+				std::cout << "computer system done\n";
+				ChannelDestroy(chid);
+				return 0;
 			}
 
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);

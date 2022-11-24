@@ -135,25 +135,25 @@ public:
 
 					if(readChar == ';'){
 						if(i == 0){
-							std::cout << "ssr no flying planes\n";
+//							std::cout << "ssr no flying planes\n";
 							break;	// no flying planes
 						}
 
-						std::cout << "ssr last plane: " << FD_buffer << "\n";
+//						std::cout << "ssr last plane: " << FD_buffer << "\n";
 
 						bool inFile = true;
 
 						for(std::string filename : flyingFileNames){
 							if(filename == FD_buffer){
-								std::cout << FD_buffer << " already in list\n";
+//								std::cout << FD_buffer << " already in list\n";
 								inFile = false;
 							}
 						}
 
 						if(inFile){
-							write = true;
+							write = true;	// found plane that is not already flying
 
-							std::cout << "added: " << FD_buffer << "\n";
+//							std::cout << "added: " << FD_buffer << "\n";
 							flyingFileNames.push_back(FD_buffer);
 
 							// open shm for current plane
@@ -180,21 +180,21 @@ public:
 					}
 					// found a plane, open shm
 					else if(readChar == ','){
-						std::cout << "ssr found: " << FD_buffer << "\n";
+//						std::cout << "ssr found: " << FD_buffer << "\n";
 
 						bool inFile = true;
 
 						for(std::string filename : flyingFileNames){
 							if(filename == FD_buffer){
-								std::cout << FD_buffer << " already in list\n";
+//								std::cout << FD_buffer << " already in list\n";
 								inFile = false;
 							}
 						}
 
 						if(inFile){
-							write = true;
+							write = true;	// found new flying plane that wasn't already flying
 
-							std::cout << "added: " << FD_buffer << "\n";
+//							std::cout << "added: " << FD_buffer << "\n";
 							flyingFileNames.push_back(FD_buffer);
 
 							// open shm for current plane
@@ -227,64 +227,64 @@ public:
 					FD_buffer += readChar;
 				}
 
-				if(write){
-					//				pthread_mutex_unlock(&mutex);
 
-					// get plane info
+				// get plane info
 
-					// buffer for all plane info
-					std::string airspaceBuffer = "";
+				// buffer for all plane info
+				std::string airspaceBuffer = "";
 
 
-					int i = 0;
-					auto it = planePtrs.begin();
-					//				pthread_mutex_lock(&mutex);
-					while(it != planePtrs.end()){
-						std::string readBuffer = "";
-						char readChar = *((char *)*it);
+				int i = 0;
+				auto it = planePtrs.begin();
+				//				pthread_mutex_lock(&mutex);
+				while(it != planePtrs.end()){
+					std::string readBuffer = "";
+					char readChar = *((char *)*it);
 
-						if(readChar == 't'){
-							// remove plane (terminated)
-							std::cout << "ssr found terminated\n";
+					if(readChar == 't'){
+						write = true;	// found plane to remove
 
-							// remove current fd from flying planes fd vector
-							flyingFileNames.erase(flyingFileNames.begin() + i);
+						// remove plane (terminated)
+//						std::cout << "ssr found terminated\n";
 
-							// remove current plane from ptr vector
-							it = planePtrs.erase(it);
+						// remove current fd from flying planes fd vector
+						flyingFileNames.erase(flyingFileNames.begin() + i);
 
-							numPlanes--;
-							std::cout << "ssr number of planes: " << numPlanes << "\n";
-						}
-						else{
-							int j = 0;
-							std::cout << "reading current plane data\n";
-							for(; j < SIZE_SHM_PLANES; j++){
-								char readChar = *((char *)*it + j);
-								if(readChar == ';'){
-									break;
-								}
+						// remove current plane from ptr vector
+						it = planePtrs.erase(it);
 
-								if(i != 0 && j == 0){
-									readBuffer += "/";	// plane separator
-								}
-								readBuffer += readChar;
-							}
-							if(j == 0){
-								break;	// no planes
-							}
-							i++;	// only increment if no plane to terminate and plane info added
-							++it;
-						}
-
-						airspaceBuffer += readBuffer;
+						numPlanes--;
+//						std::cout << "ssr number of planes: " << numPlanes << "\n";
 					}
-					//				pthread_mutex_unlock(&mutex);
+					else{
+						int j = 0;
+//						std::cout << "reading current plane data\n";
+						for(; j < SIZE_SHM_PLANES; j++){
+							char readChar = *((char *)*it + j);
+							if(readChar == ';'){
+								break;
+							}
 
-					// termination character for airspace write
-					airspaceBuffer += ";";
+							if(i != 0 && j == 0){
+								readBuffer += "/";	// plane separator
+							}
+							readBuffer += readChar;
+						}
+						if(j == 0){
+							break;	// no planes
+						}
+						i++;	// only increment if no plane to terminate and plane info added
+						++it;
+					}
+
+					airspaceBuffer += readBuffer;
+				}
+
+				// termination character for airspace write
+				airspaceBuffer += ";";
 
 
+				if(write){
 					// new flying planes buffer
 					std::string currentAirspace = "";
 
@@ -304,27 +304,24 @@ public:
 					currentAirspace += ";";
 
 
-					std::cout << "SSR current flying planes list: " << currentAirspace << "\n";
+//					std::cout << "ssr current flying planes list: " << currentAirspace << "\n";
 
-					std::cout << "SSR current airspace: " << airspaceBuffer << "\n";
-
-					//				pthread_mutex_lock(&mutex);
 					// write new flying planes list
 					sprintf((char *)ptr_flyingPlanes, "%s", currentAirspace.c_str());
-					printf("ssr flying planes after write: %s\n", ptr_flyingPlanes);
+//					printf("ssr flying planes after write: %s\n", ptr_flyingPlanes);
 
-					// write new airspace to buffer
-					sprintf((char *)ptr_airspace, "%s", airspaceBuffer.c_str());
-					printf("ssr airspace after write: %s\n", ptr_airspace);
-
-					//									pthread_mutex_unlock(&mutex);
 				}
+
+				// write new airspace to shm
+//				std::cout << "ssr current airspace: " << airspaceBuffer << "\n";
+				sprintf((char *)ptr_airspace, "%s", airspaceBuffer.c_str());
+//				printf("ssr airspace after write: %s\n", ptr_airspace);
 
 				pthread_mutex_unlock(&mutex);
 
 				// check for termination
 				if(numPlanes <= 0){
-					std::cout << "ssr done\n";
+//					std::cout << "ssr done\n";
 					ChannelDestroy(chid);
 
 					return 0;

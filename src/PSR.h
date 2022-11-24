@@ -157,6 +157,7 @@ public:
 	}
 
 	int stop() {
+//		std::cout << "psr stop called\n";
 		pthread_join(PSRthread, NULL);
 		return 0;
 	}
@@ -344,16 +345,17 @@ public:
 
 					// write new flying planes list to shm
 					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
-					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
 					//					pthread_mutex_unlock(&mutex);
 				}
 
+				// clear buffer for next flying planes list
 				flyingFileNames.clear();
 
 				pthread_mutex_unlock(&mutex);
 				// check for PSR termination
 				if(numWaitingPlanes <= 0){
-					std::cout << "PSR terminated\n";
+//					std::cout << "psr done\n";
 					ChannelDestroy(chid);
 					return 0;
 				}
