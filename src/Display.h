@@ -28,13 +28,8 @@
 #include <sys/neutrino.h>
 #include <time.h>
 
+#include "Limits.h"
 
-#define SCALER 3000
-#define MARGIN 100000
-#define PERIOD_D 5000000 //5sec period
-
-#define SIZE_DISPLAY 4096
-#define SIZE_SHM_DISPLAY 4096
 
 const int block_count = (int)MARGIN/(int)SCALER;
 
