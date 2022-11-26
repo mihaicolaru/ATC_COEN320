@@ -155,12 +155,13 @@ public:
 		ftruncate(shm_display, SIZE_SHM_DISPLAY);
 
 		// map the memory
-		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
-		if (ptr_display == MAP_FAILED) {
-			printf("Display ptr_display failed mapping\n");
+
+		void *displayPtr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if (displayPtr == MAP_FAILED) {
+			printf("Display ptr failed mapping\n");
 			return -1;
 		}
-		sprintf((char *)ptr_display, ";");
+		sprintf((char *)displayPtr, ";");
 
 		// figure out your input string to send to display (from computer system)
 //		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
@@ -297,9 +298,12 @@ protected:
 	int shm_airspace;
 	void *airspacePtr;
 
-	// display shm
+
+
+	// shm display
 	int shm_display;
-	void *ptr_display;
+	void *displayPtr;
+
 
 	pthread_mutex_t mutex;
 
