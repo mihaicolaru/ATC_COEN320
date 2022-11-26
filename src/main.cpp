@@ -14,7 +14,6 @@
 int main() {
 
 	ATC atc;
-	atc.start();
 
 	return 0;
 
