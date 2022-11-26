@@ -49,7 +49,7 @@ public:
 		}
 		delete psr;
 		delete ssr;
-//		delete display;
+		delete display;
 		delete computerSystem;
 
 	}
@@ -149,12 +149,13 @@ public:
 
 		/*Display's Shared Memory Initialization*/
 		// create shm of planes to display
-		int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
+		shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
 
 		// set shm size
 		ftruncate(shm_display, SIZE_SHM_DISPLAY);
 
 		// map the memory
+
 		void *displayPtr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
 		if (displayPtr == MAP_FAILED) {
 			printf("Display ptr failed mapping\n");
@@ -174,8 +175,8 @@ public:
 
 //		std::cout << "atc after writing display shm\n";
 
-//		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
-//		display = newDisplay;
+		Display *newDisplay = new Display();//Add nb of existing plane (in air)
+		display = newDisplay;
 //		std::cout << "atc display created\n";
 
 		ComputerSystem *newCS = new ComputerSystem(planes.size());
@@ -192,7 +193,7 @@ public:
 		// start threaded objects
 		psr->start();
 		ssr->start();
-//		display->start();
+		display->start();
 		computerSystem->start();
 		for (Plane *plane : planes) {
 			plane->start();
@@ -207,7 +208,7 @@ public:
 
 		psr->stop();
 		ssr->stop();
-//		display->stop();
+		display->stop();
 		computerSystem->stop();
 
 		return 0; // set to error code if any
@@ -297,9 +298,12 @@ protected:
 	int shm_airspace;
 	void *airspacePtr;
 
+
+
 	// shm display
 	int shm_display;
 	void *displayPtr;
+
 
 	pthread_mutex_t mutex;
 

@@ -92,15 +92,15 @@ public:
 		}
 
 		// open shm display
-		shm_displayData = shm_open("display", O_RDWR, 0666);
-		if(shm_displayData == -1) {
+		shm_display = shm_open("display", O_RDWR, 0666);
+		if(shm_display == -1) {
 			perror("in compsys shm_open() display");
 			exit(1);
 		}
 
 		// map display shm
-		ptr_positionData = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
-		if(ptr_positionData == MAP_FAILED) {
+		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if(ptr_display == MAP_FAILED) {
 			perror("in copmsys map() display");
 			exit(1);
 		}
@@ -156,7 +156,6 @@ public:
 				// find planes in airspace
 				for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
 					char readChar = *((char *)ptr_airspace + i);
-
 					// end of airspace shm, line termination found
 					if(readChar == ';'){
 						// i=0 no planes found
@@ -498,20 +497,18 @@ public:
 						printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
 						printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
-
 						// add plane to buffer for display
 
-						// id,posx,posy,posz,info
+            // id,posx,posy,posz,info
 						// ex: 1,15000,20000,5000,0
 						//						currentPlaneBuffer += 0;
+						displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",1/";
 
 						(*it)->keep = false;	// if found next time, this will become true again
 
 						// only increment if no plane to remove
 						++it;
 					}
-					displayBuffer += currentPlaneBuffer;
-					currentPlaneBuffer = "";
 				}
 				// ================= end print airspace =================
 
@@ -565,10 +562,14 @@ public:
 				}
 
 				// ================= write to display shm =================
-
+				//termination character
+				displayBuffer = displayBuffer+";";
 				//lock mutex
-				//sprintf(ptr_display)
+//				printf("New buffer data: %s\n", displayBuffer.c_str());
+				pthread_mutex_lock(&mutex);
+				sprintf((char* )ptr_display, "%s", displayBuffer.c_str());
 				//unlock mutex
+				pthread_mutex_unlock(&mutex);
 
 			}
 
@@ -612,8 +613,8 @@ private:
 	std::vector<trajectoryPrediction *> trajectoryPredictions;
 
 	// display shm
-	int shm_displayData;
-	void *ptr_positionData;
+	int shm_display;
+	void *ptr_display;
 
 
 
