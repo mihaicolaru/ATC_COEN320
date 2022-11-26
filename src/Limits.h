@@ -37,12 +37,14 @@
 #define SIZE_SHM_PSR 4096
 #define PSR_PERIOD 2000000
 
-// Display Specfications
+// Display Specifications
 #define SCALER 3000
 #define MARGIN 100000
 #define PERIOD_D 5000000 //5sec period
 #define SIZE_SHM_DISPLAY 4096
 
+// Computer system specifications
+#define CS_PERIOD 2000000
 
 // Plane Specifications
 #define OFFSET 1000000

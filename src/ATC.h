@@ -155,21 +155,22 @@ public:
 		ftruncate(shm_display, SIZE_SHM_DISPLAY);
 
 		// map the memory
-		void *ptr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
-		if (ptr== MAP_FAILED) {
+		void *displayPtr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if (displayPtr == MAP_FAILED) {
 			printf("Display ptr failed mapping\n");
 			return -1;
 		}
+		sprintf((char *)displayPtr, ";");
 
 		// figure out your input string to send to display (from computer system)
-		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
-
-		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
-
-		// save file descriptors to shm
-		for (int i = 0; i < sizeof(arrayString); i++) {
-			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
-		}
+//		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
+//
+//		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
+//
+//		// save file descriptors to shm
+//		for (int i = 0; i < sizeof(arrayString); i++) {
+//			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
+//		}
 
 //		std::cout << "atc after writing display shm\n";
 
@@ -295,6 +296,10 @@ protected:
 	// shm airspace
 	int shm_airspace;
 	void *airspacePtr;
+
+	// shm display
+	int shm_display;
+	void *displayPtr;
 
 	pthread_mutex_t mutex;
 

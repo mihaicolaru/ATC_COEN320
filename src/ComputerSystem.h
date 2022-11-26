@@ -24,8 +24,6 @@
 #include "Display.h"
 #include "Limits.h"
 
-#define CS_PERIOD 2000000
-
 class Plane;		// forward declaration
 
 struct trajectoryPrediction {
