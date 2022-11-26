@@ -26,7 +26,19 @@
 
 #define CS_PERIOD 2000000
 
-class Plane;
+class Plane;		// forward declaration
+
+struct trajectoryPrediction {
+	int id;
+
+	std::vector<int> posX;
+	std::vector<int> posY;
+	std::vector<int> posZ;
+
+	int t;
+
+	bool keep;
+};
 
 struct aircraft{
 	int id;
@@ -100,7 +112,7 @@ public:
 
 	// start computer system
 	int start(){
-//		std::cout << "computer system start called\n";
+		//		std::cout << "computer system start called\n";
 		if (pthread_create(&computerSystemThread, &attr, &ComputerSystem::startComputerSystem, (void *)this) != EOK) {
 			computerSystemThread = NULL;
 		}
@@ -108,7 +120,7 @@ public:
 
 	// join computer system thread
 	int stop(){
-//		std::cout << "computer system stop called\n";
+		//		std::cout << "computer system stop called\n";
 		pthread_join(computerSystemThread, NULL);
 		return 0;
 	}
@@ -134,11 +146,11 @@ public:
 				// ================= read airspace shm =================
 				std::string readBuffer = "";
 				int j = 0;
-//				printf("computer system read airspace: %s\n", ptr_airspace);
-//				std::cout << "compsys current planes:\n";
-//				for(aircraft *craft : flyingPlanesInfo){
-//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
-//				}
+				//				printf("computer system read airspace: %s\n", ptr_airspace);
+				//				std::cout << "compsys current planes:\n";
+				//				for(aircraft *craft : flyingPlanesInfo){
+				//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
+				//				}
 
 				// variable buffer, these get overwritten as needed
 				int id, arrTime, pos[3], vel[3];
@@ -151,24 +163,23 @@ public:
 					if(readChar == ';'){
 						// i=0 no planes found
 						if(i == 0){
-//							std::cout << "compsys no flying planes\n";
+							//							std::cout << "compsys no flying planes\n";
 							break;
 						}
 
 						// load last field in buffer
 						vel[2] = atoi(readBuffer.c_str());
-//						std::cout << "compsys found last plane " << id << "\n";
+						//						std::cout << "compsys found last plane " << id << "\n";
 
 						// check if already in airspace, if yes update with current data
 						bool inList = false;
 						for(aircraft *craft : flyingPlanesInfo){
-//							std::cout << "target plane id: " << id << "\n";
-//							std::cout << "current plane: " << craft->id << "\n";
+							//							std::cout << "target plane id: " << id << "\n";
+							//							std::cout << "current plane: " << craft->id << "\n";
 
 							if(craft->id == id){
-//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+								//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 								// TODO: implement check of current position with predicted position
-
 								// if found, update with current info
 								craft->pos[0] = pos[0];
 								craft->pos[1] = pos[1];
@@ -181,17 +192,40 @@ public:
 								// it is already in the list, do not add new
 								inList = true;
 
-//								std::cout << "compsys plane " << craft->id << " new values:\n"
-//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-//										<< "set keep value to: " << craft->keep << "\n";
+								for(trajectoryPrediction *prediction : trajectoryPredictions){
+									if(prediction->id == craft->id){
+										// check posx, posy and poz if same
+										if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
+											prediction->t++;
+										}
+										// update the prediction
+										else{
+											prediction->posX.clear();
+											prediction->posY.clear();
+											prediction->posZ.clear();
+
+											for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
+												prediction->posX.push_back(craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0]);
+												prediction->posY.push_back(craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1]);
+												prediction->posZ.push_back(craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2]);
+
+											}
+											prediction->t = 1;
+											prediction->keep = true;
+										}	
+									}
+								}
+								//								std::cout << "compsys plane " << craft->id << " new values:\n"
+								//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
+								//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
+								//										<< "set keep value to: " << craft->keep << "\n";
 								break;
 							}
 						}
 
 						// if plane was not already in the list, add it
 						if(!inList){
-//							std::cout << "compsys found new plane " << id << "\n";
+							//							std::cout << "compsys found new plane " << id << "\n";
 							// new pointer to struct, set members from read
 							aircraft *currentAircraft = new aircraft();
 							currentAircraft->id = id;
@@ -204,24 +238,38 @@ public:
 							currentAircraft->vel[2] = vel[2];
 							currentAircraft->keep = true;	// keep for first computation
 							flyingPlanesInfo.push_back(currentAircraft);	// add to struct pointer vector
-						}
 
-						break;
+							trajectoryPrediction *currentPrediction = new trajectoryPrediction();
+
+							currentPrediction->id = currentAircraft->id;
+
+							for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
+								currentPrediction->posX.push_back(currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0]);
+								currentPrediction->posY.push_back(currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1]);
+								currentPrediction->posZ.push_back(currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2]);
+							}
+
+							currentPrediction->t = 1;
+							currentPrediction->keep = true;
+							trajectoryPredictions.push_back(currentPrediction);
+
+							break;
+						}
 					}
 					// found plane in airspace (plane termination character)
 					else if(readChar == '/'){
 						// load last value in buffer
 						vel[2] = atoi(readBuffer.c_str());
-//						std::cout << "compsys found next plane " << id << "\n";
+						//						std::cout << "compsys found next plane " << id << "\n";
 
 						// check if already in airspace, if yes update with current data
 						bool inList = false;
 						for(aircraft *craft : flyingPlanesInfo){
-//							std::cout << "target plane id: " << id << "\n";
-//							std::cout << "current plane: " << craft->id << "\n";
+							//							std::cout << "target plane id: " << id << "\n";
+							//							std::cout << "current plane: " << craft->id << "\n";
 
 							if(craft->id == id){
-//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+								//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 								// TODO: implement check of current position with predicted position
 
 								// if found, update with current info
@@ -236,10 +284,36 @@ public:
 								// if already in list, do not add new
 								inList = true;
 
-//								std::cout << "compsys plane " << craft->id << " new values:\n"
-//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-//										<< "set keep value to: " << craft->keep << "\n";
+								for(trajectoryPrediction *prediction : trajectoryPredictions){
+									if(prediction->id == craft->id){
+										// check posx, posy and poz if same
+										if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
+											prediction->t++;
+										}
+
+										// update the prediction
+										else{
+											prediction->posX.clear();
+											prediction->posY.clear();
+											prediction->posZ.clear();
+
+											for(int i = 1; i < 180 / (CS_PERIOD/1000000); i++){
+												prediction->posX.push_back(craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0]);
+												prediction->posY.push_back(craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1]);
+												prediction->posZ.push_back(craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2]);
+											}
+
+											prediction->t = 1;
+											prediction->keep = true;
+
+										}
+									}
+								}
+
+								//								std::cout << "compsys plane " << craft->id << " new values:\n"
+								//										<< "posx " << craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n"
+								//										<< "velx " << craft->vel[0] << ", vely " << craft->vel[1] << ", velz " << craft->vel[2] << "\n"
+								//										<< "set keep value to: " << craft->keep << "\n";
 								break;
 							}
 						}
@@ -247,7 +321,7 @@ public:
 						// if plane was not already in the list, add it
 						if(!inList){
 							// new pointer to struct, set members from read
-//							std::cout << "compsys found new plane " << id << "\n";
+							//							std::cout << "compsys found new plane " << id << "\n";
 							aircraft *currentAircraft = new aircraft();
 							currentAircraft->id = id;
 							currentAircraft->t_arrival = arrTime;
@@ -259,6 +333,21 @@ public:
 							currentAircraft->vel[2] = vel[2];
 							currentAircraft->keep = true;	// keep for first computation
 							flyingPlanesInfo.push_back(currentAircraft);	// add to struct pointer vector
+
+							trajectoryPrediction *currentPrediction = new trajectoryPrediction();
+
+							currentPrediction->id = currentAircraft->id;
+
+							for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
+								currentPrediction->posX.push_back(currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0]);
+								currentPrediction->posY.push_back(currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1]);
+								currentPrediction->posZ.push_back(currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2]);
+							}
+
+							currentPrediction->t = 1;
+							currentPrediction->keep = true;
+
+							trajectoryPredictions.push_back(currentPrediction);
 						}
 
 						// reset buffer and index for next plane
@@ -316,27 +405,27 @@ public:
 				}
 				// ================= end read airspace =================
 
-//				std::cout << "remaining planes:\n";
-//				for(aircraft *craft : flyingPlanesInfo){
-//					//					craft.keep = true;
-//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
-//					std::cout << "new values: posx "<< craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n";
-//				}
+				//				std::cout << "remaining planes:\n";
+				//				for(aircraft *craft : flyingPlanesInfo){
+				//					//					craft.keep = true;
+				//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
+				//					std::cout << "new values: posx "<< craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n";
+				//				}
 
 
 				// ================= print airspace info =================
 
 				std::string displayBuffer = "";
 				std::string currentPlaneBuffer = "";
-//				printf("airspace that was read: %s\n", ptr_airspace);
+				//				printf("airspace that was read: %s\n", ptr_airspace);
 				// print what was found, remove what is no longer in the airspace
 				auto it = flyingPlanesInfo.begin();
 				while(it != flyingPlanesInfo.end()){
-//					std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+					//					std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 					bool temp = (*it)->keep;	// check if plane was terminated
 
 					if(!temp){
-//						std::cout << "compsys found plane " << (*it)->id << " terminated\n";
+						//						std::cout << "compsys found plane " << (*it)->id << " terminated\n";
 						it = flyingPlanesInfo.erase(it);
 						numPlanes--;
 						std::cout << "computer system number of planes left: " << numPlanes << "\n";
@@ -352,7 +441,7 @@ public:
 
 						// id,posx,posy,posz,info
 						// ex: 1,15000,20000,5000,0
-//						currentPlaneBuffer += 0;
+						//						currentPlaneBuffer += 0;
 
 						(*it)->keep = false;	// if found next time, this will become true again
 
@@ -363,6 +452,39 @@ public:
 					currentPlaneBuffer = "";
 				}
 				// ================= end print airspace =================
+
+				auto itpred = trajectoryPredictions.begin();
+				while(itpred != trajectoryPredictions.end()){
+					//					std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+					// bool temp = (*it)->keep;
+
+					// check if plane was terminated
+					if(!(*itpred)->keep){
+						//						std::cout << "compsys found plane " << (*it)->id << " terminated\n";
+						itpred = trajectoryPredictions.erase(itpred);
+					}
+					else{
+						// print plane info
+
+						printf("plane %i predictions:\n", (*itpred)->id);
+						for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
+							printf("posx: %i, posy: %i, posz: %i\n", (*itpred)->posX.at(i), (*itpred)->posY.at(i), (*itpred)->posZ.at(i));
+						}
+
+
+
+						// add plane to buffer for display
+
+						// id,posx,posy,posz,info
+						// ex: 1,15000,20000,5000,0
+						//						currentPlaneBuffer += 0;
+
+						(*itpred)->keep = false;	// if found next time, this will become true again
+
+						// only increment if no plane to remove
+						++itpred;
+					}
+				}
 
 				// ================= write to display shm =================
 
@@ -409,6 +531,7 @@ private:
 	int shm_airspace;
 	void *ptr_airspace;
 	std::vector<aircraft *> flyingPlanesInfo;
+	std::vector<trajectoryPrediction *> trajectoryPredictions;
 
 	// display shm
 	int shm_displayData;

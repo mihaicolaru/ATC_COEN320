@@ -134,7 +134,7 @@ public:
 
 		// map shm
 		airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if (waitingPtr == MAP_FAILED) {
+		if (airspacePtr == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
