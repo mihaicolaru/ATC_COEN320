@@ -49,7 +49,7 @@ public:
 		}
 		delete psr;
 		delete ssr;
-//		delete display;
+		delete display;
 		delete computerSystem;
 
 	}
@@ -134,7 +134,7 @@ public:
 
 		// map shm
 		airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if (waitingPtr == MAP_FAILED) {
+		if (airspacePtr == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
@@ -149,32 +149,33 @@ public:
 
 		/*Display's Shared Memory Initialization*/
 		// create shm of planes to display
-		int shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
+		shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
 
 		// set shm size
 		ftruncate(shm_display, SIZE_SHM_DISPLAY);
 
 		// map the memory
-		void *ptr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
-		if (ptr== MAP_FAILED) {
-			printf("Display ptr failed mapping\n");
+		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if (ptr_display == MAP_FAILED) {
+			printf("Display ptr_display failed mapping\n");
 			return -1;
 		}
+		sprintf((char *)ptr_display, "\\");
 
 		// figure out your input string to send to display (from computer system)
-		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
-
-		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
-
-		// save file descriptors to shm
-		for (int i = 0; i < sizeof(arrayString); i++) {
-			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
-		}
+//		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
+//
+//		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
+//
+//		// save file descriptors to shm
+//		for (int i = 0; i < sizeof(arrayString); i++) {
+//			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
+//		}
 
 //		std::cout << "atc after writing display shm\n";
 
-//		Display *newDisplay = new Display(2);//Add nb of existing plane (in air)
-//		display = newDisplay;
+		Display *newDisplay = new Display();//Add nb of existing plane (in air)
+		display = newDisplay;
 //		std::cout << "atc display created\n";
 
 		ComputerSystem *newCS = new ComputerSystem(planes.size());
@@ -191,7 +192,7 @@ public:
 		// start threaded objects
 		psr->start();
 		ssr->start();
-//		display->start();
+		display->start();
 		computerSystem->start();
 		for (Plane *plane : planes) {
 			plane->start();
@@ -206,7 +207,7 @@ public:
 
 		psr->stop();
 		ssr->stop();
-//		display->stop();
+		display->stop();
 		computerSystem->stop();
 
 		return 0; // set to error code if any
@@ -295,6 +296,10 @@ protected:
 	// shm airspace
 	int shm_airspace;
 	void *airspacePtr;
+
+	// display shm
+	int shm_display;
+	void *ptr_display;
 
 	pthread_mutex_t mutex;
 

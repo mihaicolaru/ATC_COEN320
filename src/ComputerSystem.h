@@ -82,15 +82,15 @@ public:
 		}
 
 		// open shm display
-		shm_displayData = shm_open("display", O_RDWR, 0666);
-		if(shm_displayData == -1) {
+		shm_display = shm_open("display", O_RDWR, 0666);
+		if(shm_display == -1) {
 			perror("in compsys shm_open() display");
 			exit(1);
 		}
 
 		// map display shm
-		ptr_positionData = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
-		if(ptr_positionData == MAP_FAILED) {
+		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if(ptr_display == MAP_FAILED) {
 			perror("in copmsys map() display");
 			exit(1);
 		}
@@ -146,7 +146,6 @@ public:
 				// find planes in airspace
 				for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
 					char readChar = *((char *)ptr_airspace + i);
-
 					// end of airspace shm, line termination found
 					if(readChar == ';'){
 						// i=0 no planes found
@@ -353,22 +352,28 @@ public:
 						// id,posx,posy,posz,info
 						// ex: 1,15000,20000,5000,0
 //						currentPlaneBuffer += 0;
-
+						displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",1;";
 						(*it)->keep = false;	// if found next time, this will become true again
 
 						// only increment if no plane to remove
 						++it;
 					}
-					displayBuffer += currentPlaneBuffer;
-					currentPlaneBuffer = "";
+//					displayBuffer += currentPlaneBuffer;
+//					currentPlaneBuffer = "";
+					//Send 1 plane's data at a time
 				}
 				// ================= end print airspace =================
 
 				// ================= write to display shm =================
-
+				//termination character
+				displayBuffer = displayBuffer+"\\";
 				//lock mutex
+//				printf("New buffer data: %s\n", displayBuffer.c_str());
+				pthread_mutex_lock(&mutex);
 				//sprintf(ptr_display)
+				sprintf((char* )ptr_display, "%s", displayBuffer.c_str());
 				//unlock mutex
+				pthread_mutex_unlock(&mutex);
 
 			}
 
@@ -411,8 +416,8 @@ private:
 	std::vector<aircraft *> flyingPlanesInfo;
 
 	// display shm
-	int shm_displayData;
-	void *ptr_positionData;
+	int shm_display;
+	void *ptr_display;
 
 
 
