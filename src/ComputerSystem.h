@@ -260,9 +260,25 @@ public:
 							currentPrediction->id = currentAircraft->id;
 
 							for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
-								currentPrediction->posX.push_back(currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0]);
-								currentPrediction->posY.push_back(currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1]);
-								currentPrediction->posZ.push_back(currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2]);
+								int currX = currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0];
+								int currY = currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1];
+								int currZ = currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2];
+
+								bool outOfBounds = false;
+								if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+									outOfBounds = true;
+								}
+								if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+									outOfBounds = true;
+								}
+								if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+									outOfBounds = true;
+								}
+								if(outOfBounds) break;
+
+								currentPrediction->posX.push_back(currX);
+								currentPrediction->posY.push_back(currY);
+								currentPrediction->posZ.push_back(currZ);
 							}
 
 							currentPrediction->t = 1;
@@ -314,9 +330,25 @@ public:
 											prediction->posZ.clear();
 
 											for(int i = 1; i < 180 / (CS_PERIOD/1000000); i++){
-												prediction->posX.push_back(craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0]);
-												prediction->posY.push_back(craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1]);
-												prediction->posZ.push_back(craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2]);
+												int currX = craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0];
+												int currY = craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1];
+												int currZ = craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2];
+
+												bool outOfBounds = false;
+												if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+													outOfBounds = true;
+												}
+												if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+													outOfBounds = true;
+												}
+												if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+													outOfBounds = true;
+												}
+												if(outOfBounds) break;
+
+												prediction->posX.push_back(currX);
+												prediction->posY.push_back(currY);
+												prediction->posZ.push_back(currZ);
 											}
 
 											prediction->t = 1;
@@ -355,9 +387,25 @@ public:
 							currentPrediction->id = currentAircraft->id;
 
 							for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
-								currentPrediction->posX.push_back(currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0]);
-								currentPrediction->posY.push_back(currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1]);
-								currentPrediction->posZ.push_back(currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2]);
+								int currX = currentAircraft->pos[0] + i * (CS_PERIOD/1000000) * currentAircraft->vel[0];
+								int currY = currentAircraft->pos[1] + i * (CS_PERIOD/1000000) * currentAircraft->vel[1];
+								int currZ = currentAircraft->pos[2] + i * (CS_PERIOD/1000000) * currentAircraft->vel[2];
+
+								bool outOfBounds = false;
+								if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+									outOfBounds = true;
+								}
+								if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+									outOfBounds = true;
+								}
+								if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+									outOfBounds = true;
+								}
+								if(outOfBounds) break;
+
+								currentPrediction->posX.push_back(currX);
+								currentPrediction->posY.push_back(currY);
+								currentPrediction->posZ.push_back(currZ);
 							}
 
 							currentPrediction->t = 1;
@@ -482,10 +530,26 @@ public:
 					else{
 						// print plane info
 
-						printf("plane %i predictions:\n", (*itpred)->id);
-						for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
-							printf("posx: %i, posy: %i, posz: %i\n", (*itpred)->posX.at(i), (*itpred)->posY.at(i), (*itpred)->posZ.at(i));
-						}
+//						printf("plane %i predictions:\n", (*itpred)->id);
+//						for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
+//							bool outOfBounds = false;
+//							int currX = (*itpred)->posX.at(i);
+//							int currY = (*itpred)->posY.at(i);
+//							int currZ = (*itpred)->posZ.at(i);
+//
+//							if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+//								outOfBounds = true;
+//							}
+//							if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+//								outOfBounds = true;
+//							}
+//							if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+//								outOfBounds = true;
+//							}
+//							if(outOfBounds) break;
+//
+//							printf("posx: %i, posy: %i, posz: %i\n", currX, currY, currZ);
+//						}
 
 
 
