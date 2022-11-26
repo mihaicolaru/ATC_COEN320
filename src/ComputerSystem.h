@@ -345,34 +345,26 @@ public:
 						printf("plane %i:\n", (*it)->id);
 						printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
 						printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
-
-
-						// add plane to buffer for display
-
-						// id,posx,posy,posz,info
-						// ex: 1,15000,20000,5000,0
-//						currentPlaneBuffer += 0;
-						displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",1;";
 						(*it)->keep = false;	// if found next time, this will become true again
-
 						// only increment if no plane to remove
 						++it;
+
+						//Packaging data into buffer for 1 plane
+						displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",1;";
+
+
+
 					}
-//					displayBuffer += currentPlaneBuffer;
-//					currentPlaneBuffer = "";
-					//Send 1 plane's data at a time
+
 				}
 				// ================= end print airspace =================
 
 				// ================= write to display shm =================
 				//termination character
 				displayBuffer = displayBuffer+"\\";
-				//lock mutex
-//				printf("New buffer data: %s\n", displayBuffer.c_str());
+				//Pass data
 				pthread_mutex_lock(&mutex);
-				//sprintf(ptr_display)
 				sprintf((char* )ptr_display, "%s", displayBuffer.c_str());
-				//unlock mutex
 				pthread_mutex_unlock(&mutex);
 
 			}
