@@ -162,17 +162,6 @@ public:
 			return -1;
 		}
 		sprintf((char *)displayPtr, ";");
-
-		// figure out your input string to send to display (from computer system)
-//		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
-//
-//		char arrayString[inputString.length()]="900,8000,16000,1;8000,30000,17000,0;";// dont do this but basically u need a char array the size of the string, needs to be hardcoded
-//
-//		// save file descriptors to shm
-//		for (int i = 0; i < sizeof(arrayString); i++) {
-//			sprintf((char *)ptr + i, "%c", arrayString[i]);// writes inputstring to shm character by character
-//		}
-
 //		std::cout << "atc after writing display shm\n";
 
 		Display *newDisplay = new Display();//Add nb of existing plane (in air)

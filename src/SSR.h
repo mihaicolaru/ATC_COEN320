@@ -92,7 +92,7 @@ public:
 	}
 
 	int stop() {
-//		std::cout << "ssr stop called\n";
+		//		std::cout << "ssr stop called\n";
 		pthread_join(SSRthread, NULL);
 		return 0;
 	}
@@ -325,7 +325,7 @@ public:
 					currentAirspace += ";";
 
 
-					//					std::cout << "ssr current flying planes list: " << currentAirspace << "\n";
+//					std::cout << "ssr current flying planes list: " << currentAirspace << "\n";
 
 					// write new flying planes list
 					sprintf((char *)ptr_flyingPlanes, "%s", currentAirspace.c_str());
@@ -338,9 +338,9 @@ public:
 
 				// ================= write airspace shm =================
 
-				//				std::cout << "ssr current airspace: " << airspaceBuffer << "\n";
+				//								std::cout << "ssr current airspace: " << airspaceBuffer << "\n";
 				sprintf((char *)ptr_airspace, "%s", airspaceBuffer.c_str());
-//				printf("ssr airspace after write: %s\n", ptr_airspace);
+				//				printf("ssr airspace after write: %s\n", ptr_airspace);
 
 				// ================= end write airspace =================
 
@@ -349,7 +349,7 @@ public:
 
 				// check for termination
 				if(numPlanes <= 0){
-//					std::cout << "ssr done\n";
+					//					std::cout << "ssr done\n";
 					ChannelDestroy(chid);
 
 					return 0;

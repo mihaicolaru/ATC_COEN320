@@ -110,19 +110,24 @@ public:
 		int i = 1;
 		while(1){
 			if(rcvid==0){
-//				printf("Display read: %s\n", ptr_display);
+				//				printf("Display read: %s\n", ptr_display);
 				int axis=0;//0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
 				std::string buffer = "";
 				std::string x="",y="",z="",display_bit="";
 				std::string id ="";
 				for (int i = 0; i < SIZE_SHM_DISPLAY; i++) {
 					char readChar = *((char *)ptr_display + i);
+					if(readChar == 't'){
+						std::cout << "display done\n";
+						ChannelDestroy(chid);
+						return 0;
+					}
 					if(readChar==';'){
 						//Wherever has the \ delimiter, ends the reading
 						break;
 					}else if(readChar == ',' || readChar == '/'){
 						if(buffer.length() >0){
-//							std::cout << "display buffer: " << buffer << "\n";//Check buffer
+							//							std::cout << "display buffer: " << buffer << "\n";//Check buffer
 							switch(axis){
 							case 0:
 								id= buffer;
@@ -163,7 +168,7 @@ public:
 						buffer+=readChar;//Keep loading buffer until delimiter has been detected
 						//				printf("Buffer: %s\n",buffer);
 					}
-					printf("%c", readChar);
+					//					printf("%c", readChar);
 				}
 				printMap();
 				height_display = "";
@@ -183,15 +188,16 @@ public:
 	void printMap(){
 		for(int j=0; j<block_count;j++){
 			for(int k=0; k<block_count;k++){
-				if(map[j][k] == "")
-					printf("_|");
-				else
-					printf("%s|", map[j][k]);
-
+				if(map[j][k] == ""){
+					//					printf("_|");
+				}
+				else{
+					//					printf("%s|", map[j][k]);
+				}
 			}
-			std::cout << std::endl;
+			//			std::cout << std::endl;
 		}
-		printf("%s", height_display.c_str());
+		//		printf("%s", height_display.c_str());
 	}
 
 private:

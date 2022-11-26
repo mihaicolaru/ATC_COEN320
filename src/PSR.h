@@ -80,7 +80,7 @@ public:
 			char readChar = *((char *)ptr_waitingPlanes + i);
 
 			if(readChar == ','){
-				//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
+//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
 
 				waitingFileNames.push_back(FD_buffer);
 
