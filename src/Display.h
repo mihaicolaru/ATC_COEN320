@@ -110,16 +110,17 @@ public:
 		int i = 1;
 		while(1){
 			if(rcvid==0){
+//				printf("Display read: %s\n", ptr_display);
 				int axis=0;//0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
 				std::string buffer = "";
 				std::string x="",y="",z="",display_bit="";
 				std::string id ="";
 				for (int i = 0; i < SIZE_SHM_DISPLAY; i++) {
 					char readChar = *((char *)ptr_display + i);
-					if(readChar=='\\'){
+					if(readChar==';'){
 						//Wherever has the \ delimiter, ends the reading
 						break;
-					}else if(readChar == ',' || readChar == ';'){
+					}else if(readChar == ',' || readChar == '/'){
 						if(buffer.length() >0){
 //							std::cout << "display buffer: " << buffer << "\n";//Check buffer
 							switch(axis){
@@ -143,7 +144,7 @@ public:
 						if(readChar == ','){
 							axis++;
 							buffer = "";
-						}else if(readChar == ';'){
+						}else if(readChar == '/'){
 							//One plane has finished loading, parsing and reset control values
 							map[stoi(x)/SCALER][stoi(y)/SCALER]+=id + "\\";
 							if(display_bit=="1"){

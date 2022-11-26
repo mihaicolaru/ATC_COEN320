@@ -160,7 +160,7 @@ public:
 			printf("Display ptr_display failed mapping\n");
 			return -1;
 		}
-		sprintf((char *)ptr_display, "\\");
+		sprintf((char *)ptr_display, ";");
 
 		// figure out your input string to send to display (from computer system)
 //		std::string inputString = "900,8000,16000,1;8000,30000,17000,0;";
