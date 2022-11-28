@@ -42,6 +42,7 @@ public:
 		shm_unlink("airspace");
 		shm_unlink("waiting_planes");
 		shm_unlink("flying_planes");
+		shm_unlink("period");
 		shm_unlink("display");
 
 		for(Plane *plane : planes){
@@ -89,7 +90,7 @@ protected:
 
 		//		std::cout << "atc initialize after readInput()\n";
 
-		// initialize shm for waiting planes (contains all planes)
+		// ============ initialize shm for waiting planes (contains all planes) ============
 		shm_waitingPlanes = shm_open("waiting_planes", O_CREAT | O_RDWR, 0666);
 		if (shm_waitingPlanes == -1) {
 			perror("in shm_open() ATC: waiting planes");
@@ -125,7 +126,7 @@ protected:
 
 		//		std::cout << "atc initialize after writing waiting planes shm\n";
 
-		// initialize shm for flying planes (contains no planes)
+		// ============ initialize shm for flying planes (contains no planes) ============
 		shm_flyingPlanes = shm_open("flying_planes", O_CREAT | O_RDWR, 0666);
 		if (shm_flyingPlanes == -1) {
 			perror("in shm_open() ATC: flying planes");
@@ -145,13 +146,7 @@ protected:
 
 		//		std::cout << "atc after writing flying planes shm\n";
 
-		// create PSR object with number of planes
-		PSR *current_psr = new PSR(planes.size());
-		psr = current_psr;
-
-		//		std::cout << "atc psr created\n";
-
-		// initialize shm for airspace (compsys <-> ssr)
+		// ============ initialize shm for airspace (compsys <-> ssr) ============
 		shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
 		if (shm_airspace == -1) {
 			perror("in shm_open() ATC: airspace");
@@ -168,16 +163,31 @@ protected:
 			return -1;
 		}
 		sprintf((char *)airspacePtr, ";");
-
 		//		std::cout << "atc after writing airspace shm\n";
 
-		SSR *current_ssr = new SSR(planes.size());
-		ssr = current_ssr;
+		// ============ initialize shm for period update ============
+		shm_period = shm_open("period", O_CREAT | O_RDWR, 0666);
+		if (shm_period == -1) {
+			perror("in shm_open() ATC: period");
+			exit(1);
+		}
 
-		//		std::cout << "atc ssr created\n";
+		// set shm size
+		ftruncate(shm_period, SIZE_SHM_PERIOD);
 
-		/*Display's Shared Memory Initialization*/
-		// create shm of planes to display
+		// map shm
+		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
+		if (periodPtr == MAP_FAILED) {
+			printf("map failed period\n");
+			return -1;
+		}
+		int per = CS_PERIOD;
+		std::string CSPeriod = std::to_string(per);
+		sprintf((char *)periodPtr, CSPeriod.c_str());
+		printf("atc period shm: %s\n", periodPtr);
+		//		std::cout << "atc after writing period shm\n";
+
+		// ============ initialize shm for display ============
 		shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
 
 		// set shm size
@@ -192,6 +202,16 @@ protected:
 		}
 		sprintf((char *)displayPtr, ";");
 		//		std::cout << "atc after writing display shm\n";
+
+		// ============ create threaded objects ============
+		// create PSR object with number of planes
+		PSR *current_psr = new PSR(planes.size());
+		psr = current_psr;
+		//		std::cout << "atc psr created\n";
+
+		SSR *current_ssr = new SSR(planes.size());
+		ssr = current_ssr;
+		//		std::cout << "atc ssr created\n";
 
 		Display *newDisplay = new Display();//Add nb of existing plane (in air)
 		display = newDisplay;
@@ -289,7 +309,9 @@ protected:
 	int shm_airspace;
 	void *airspacePtr;
 
-
+	// shm period
+	int shm_period;
+	void *periodPtr;
 
 	// shm display
 	int shm_display;

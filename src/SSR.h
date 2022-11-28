@@ -29,6 +29,7 @@ public:
 
 	// constructor
 	SSR(int numberOfPlanes){
+		currPeriod = SSR_PERIOD;
 		// initialize thread and shm members
 		initialize(numberOfPlanes);
 	}
@@ -37,7 +38,9 @@ public:
 	~SSR(){
 		shm_unlink("flying_planes");
 		shm_unlink("airspace");
+		shm_unlink("period");
 		pthread_mutex_destroy(&mutex);
+		delete timer;
 	}
 
 	int start() {
@@ -80,8 +83,8 @@ private:
 			exit(1);
 		}
 
-		ptr_flyingPlanes = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
-		if (ptr_flyingPlanes == MAP_FAILED) {
+		flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
+		if (flyingPlanesPtr == MAP_FAILED) {
 			perror("in map() SSR: flying planes");
 			exit(1);
 		}
@@ -94,9 +97,23 @@ private:
 		}
 
 		// map airspace shm
-		ptr_airspace = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
-		if (ptr_airspace == MAP_FAILED) {
+		airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_airspace, 0);
+		if (airspacePtr == MAP_FAILED) {
 			perror("in map() SSR: airspace");
+			exit(1);
+		}
+
+		// open period shm
+		shm_period = shm_open("period", O_RDONLY, 0666);
+		if (shm_period == -1) {
+			perror("in shm_open() SSR: period");
+			exit(1);
+		}
+
+		// map airspace shm
+		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ, MAP_SHARED, shm_period, 0);
+		if (periodPtr == MAP_FAILED) {
+			perror("in map() SSR: period");
 			exit(1);
 		}
 
@@ -112,8 +129,9 @@ private:
 			std::cout << "couldn't create channel!\n";
 		}
 
-		Timer timer(chid);
-		timer.setTimer(SSR_PERIOD, SSR_PERIOD);
+		Timer *newTimer = new Timer(chid);
+		timer = newTimer;
+		timer->setTimer(SSR_PERIOD, SSR_PERIOD);
 
 		int rcvid;
 		Message msg;
@@ -124,7 +142,7 @@ private:
 				pthread_mutex_lock(&mutex);
 
 				// check period shm to see if must update period
-				updatePeriod();
+				updatePeriod(chid);
 
 				// read flying planes shm
 				bool writeFlying = readFlyingPlanes();
@@ -133,7 +151,7 @@ private:
 				bool writeAirspace = getPlaneInfo();
 
 				// if new/terminated plane found, write new flying planes
-				if(write){
+				if(writeFlying || writeAirspace){
 					writeFlyingPlanes();
 				}
 
@@ -158,8 +176,18 @@ private:
 	}
 
 	// update ssr period based on period shm
-	void updatePeriod(){
-
+	void updatePeriod(int chid){
+		printf("ssr read period: %s\n", periodPtr);
+		int newPeriod = atoi((char *)periodPtr);
+		if(newPeriod != currPeriod){
+			std::cout << "ssr period changed to " << newPeriod << "\n";
+			currPeriod = newPeriod;
+			Timer *newTimer = new Timer(chid);
+			Timer *oldTimer = timer;
+			timer = newTimer;
+			timer->setTimer(currPeriod, currPeriod);
+			delete oldTimer;
+		}
 	}
 
 	// ================= read flying planes shm =================
@@ -169,7 +197,7 @@ private:
 
 		for(int i = 0; i < SIZE_SHM_SSR; i++){
 			//					std::cout << "buffer: " << FD_buffer << "\n";
-			char readChar = *((char *)ptr_flyingPlanes + i);
+			char readChar = *((char *)flyingPlanesPtr + i);
 
 			// shm termination character found
 			if(readChar == ';'){
@@ -338,8 +366,8 @@ private:
 		airspaceBuffer += ";";
 
 		//								std::cout << "ssr current airspace: " << airspaceBuffer << "\n";
-		sprintf((char *)ptr_airspace, "%s", airspaceBuffer.c_str());
-		//				printf("ssr airspace after write: %s\n", ptr_airspace);
+		sprintf((char *)airspacePtr, "%s", airspaceBuffer.c_str());
+		//				printf("ssr airspace after write: %s\n", airspacePtr);
 
 
 		return write;
@@ -369,10 +397,17 @@ private:
 		//					std::cout << "ssr current flying planes list: " << currentAirspace << "\n";
 
 		// write new flying planes list
-		sprintf((char *)ptr_flyingPlanes, "%s", currentAirspace.c_str());
-		//					printf("ssr flying planes after write: %s\n", ptr_flyingPlanes);
+		sprintf((char *)flyingPlanesPtr, "%s", currentAirspace.c_str());
+		//					printf("ssr flying planes after write: %s\n", flyingPlanesPtr);
 	}
 
+
+	// member parameters
+	// timer object
+	Timer *timer;
+
+	// current period
+	int currPeriod;
 
 
 	// thread members
@@ -390,12 +425,16 @@ private:
 
 	// flying planes list
 	int shm_flyingPlanes;
-	void *ptr_flyingPlanes;
+	void *flyingPlanesPtr;
 	std::vector<std::string> flyingFileNames;
 
 	// airspace shm
 	int shm_airspace;
-	void *ptr_airspace;
+	void *airspacePtr;
+
+	// period shm
+	int shm_period;
+	void *periodPtr;
 
 	friend class Plane;
 	friend class PSR;

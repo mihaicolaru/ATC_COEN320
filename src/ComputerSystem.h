@@ -52,6 +52,7 @@ public:
 	// construcor
 	ComputerSystem(int numberOfPlanes){
 		numPlanes = numberOfPlanes;
+		currPeriod = CS_PERIOD;
 		initialize();
 	}
 
@@ -60,6 +61,8 @@ public:
 		shm_unlink("airspace");
 		shm_unlink("display");
 		pthread_mutex_destroy(&mutex);
+
+		delete(timer);
 	}
 
 
@@ -109,9 +112,23 @@ private:
 			exit(1);
 		}
 
-		ptr_airspace = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ, MAP_SHARED, shm_airspace, 0);
-		if(ptr_airspace == MAP_FAILED) {
+		airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ, MAP_SHARED, shm_airspace, 0);
+		if(airspacePtr == MAP_FAILED) {
 			perror("in compsys map() airspace");
+			exit(1);
+		}
+
+		// open period shm
+		shm_period = shm_open("period", O_RDWR , 0666);
+		if (shm_period == -1) {
+			perror("in shm_open() PSR: period");
+			exit(1);
+		}
+
+		// map airspace shm
+		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
+		if (periodPtr == MAP_FAILED) {
+			perror("in map() PSR: period");
 			exit(1);
 		}
 
@@ -123,8 +140,8 @@ private:
 		}
 
 		// map display shm
-		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
-		if(ptr_display == MAP_FAILED) {
+		displayPtr = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+		if(displayPtr == MAP_FAILED) {
 			perror("in copmsys map() display");
 			exit(1);
 		}
@@ -140,8 +157,9 @@ private:
 			std::cout << "couldn't create channel\n";
 		}
 
-		Timer timer(chid);
-		timer.setTimer(CS_PERIOD, CS_PERIOD);
+		Timer *newTimer = new Timer(chid);
+		timer = newTimer;
+		timer->setTimer(CS_PERIOD, CS_PERIOD);
 
 		int rcvid;
 		Message msg;
@@ -163,6 +181,9 @@ private:
 				// compute airspace violations for all planes in the airspace
 				computeViolations();
 
+				// update the period based on the traffic
+				updatePeriod(chid);
+
 				//unlock mutex
 				pthread_mutex_unlock(&mutex);
 
@@ -171,7 +192,7 @@ private:
 			// termination check
 			if(numPlanes <= 0){
 				std::cout << "computer system done\n";
-				sprintf((char *)ptr_display, "terminated");
+				sprintf((char *)displayPtr, "terminated");
 				ChannelDestroy(chid);
 				return 0;
 			}
@@ -202,7 +223,7 @@ private:
 
 		// find planes in airspace
 		for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
-			char readChar = *((char *)ptr_airspace + i);
+			char readChar = *((char *)airspacePtr + i);
 			// end of airspace shm, line termination found
 			if(readChar == ';'){
 				// i=0 no planes found
@@ -559,26 +580,26 @@ private:
 	void writeToDisplay(){
 		std::string displayBuffer = "";
 		std::string currentPlaneBuffer = "";
-//		printf("airspace that was read: %s\n", ptr_airspace);
+		//		printf("airspace that was read: %s\n", ptr_airspace);
 		// print what was found, remove what is no longer in the airspace
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+			//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
-//				std::cout << "compsys found plane " << (*it)->id << " terminated\n";
+				//				std::cout << "compsys found plane " << (*it)->id << " terminated\n";
 				delete flyingPlanesInfo.at(i);
 				it = flyingPlanesInfo.erase(it);
 				numPlanes--;
-//				std::cout << "computer system number of planes left: " << numPlanes << "\n";
+				//				std::cout << "computer system number of planes left: " << numPlanes << "\n";
 			}
 			else{
 				// print plane info
-//				printf("plane %i:\n", (*it)->id);
-//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				//				printf("plane %i:\n", (*it)->id);
+				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
@@ -597,28 +618,28 @@ private:
 		//termination character
 		displayBuffer = displayBuffer + ";";
 
-		sprintf((char* )ptr_display, "%s", displayBuffer.c_str());
+		sprintf((char* )displayPtr, "%s", displayBuffer.c_str());
 	}
 
 	// ================= prune predictions =================
 	void cleanPredictions(){
-//		std::cout << "printing predictions\n";
+		//		std::cout << "printing predictions\n";
 		int j = 0;
 		auto itpred = trajectoryPredictions.begin();
 		while(itpred != trajectoryPredictions.end()){
-//			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
+			//			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
 			bool temp = (*itpred)->keep;
 
 			// check if plane was terminated
 			if(!temp){
-//				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
+				//				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
 				delete trajectoryPredictions.at(j);
 				itpred = trajectoryPredictions.erase(itpred);
 			}
 			else{
 				// print plane prediction info
 
-//				printf("plane %i predictions:\n", (*itpred)->id);
+				//				printf("plane %i predictions:\n", (*itpred)->id);
 				for(int i = (*itpred)->t-1; i < (*itpred)->t + (180 / (CS_PERIOD/1000000)); i++){
 					bool outOfBounds = false;
 					int currX = (*itpred)->posX.at(i);
@@ -635,11 +656,11 @@ private:
 						outOfBounds = true;
 					}
 					if(outOfBounds){
-//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
+						//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
 						break;
 					}
 
-//					printf("posx: %i, posy: %i, posz: %i\n", currX, currY, currZ);
+					//					printf("posx: %i, posy: %i, posz: %i\n", currX, currY, currZ);
 				}
 
 
@@ -654,7 +675,7 @@ private:
 
 	// ================= compute airspace violations =================
 	void computeViolations(){
-//		std::cout << "computing airspace violations\n";
+		//		std::cout << "computing airspace violations\n";
 		auto itIndex = trajectoryPredictions.begin();
 		while(itIndex != trajectoryPredictions.end()){
 			auto itNext = itIndex;
@@ -672,44 +693,82 @@ private:
 					int compZ = (*itNext)->posZ.at(j);
 
 					if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN || compX >= SPACE_X_MAX || compX <= SPACE_X_MIN){
-//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in X\n";
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in X\n";
 						outOfBounds = true;
 					}
 					if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN || compY >= SPACE_Y_MAX || compY <= SPACE_Y_MIN){
-//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Y\n";
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Y\n";
 						outOfBounds = true;
 					}
 					if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN || compZ >= SPACE_Z_MAX || compZ <= SPACE_Z_MIN){
-//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Z\n";
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Z\n";
 						outOfBounds = true;
 					}
 					if(outOfBounds){
-//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << "\n";
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << "\n";
 						break;
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
-//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
+						//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
 						break;
 					}
-//					std::cout << "incrementing j counter for prediction compare\n";
+					//					std::cout << "incrementing j counter for prediction compare\n";
 					j++;
 				}
 				++itNext;
 			}
 			++itIndex;
 		}
-//		std::cout << "after compute airspace violations\n";
+		//		std::cout << "after compute airspace violations\n";
 	}
 
+	// ================= update period =================
+	void updatePeriod(int chid){
+		int newPeriod = 0;
+		if(flyingPlanesInfo.size() <= 5){
+			// set period low
+			newPeriod = 1000000;
+		}
+		if(flyingPlanesInfo.size() > 5 && flyingPlanesInfo.size() <= 20){
+			// set period medium
+			newPeriod = 3000000;
+		}
+		if(flyingPlanesInfo.size() > 20 && flyingPlanesInfo.size() <= 50){
+			// set period high
+			newPeriod = 2000000;
+		}
+		if(flyingPlanesInfo.size() > 50 && flyingPlanesInfo.size() <= 200){
+			// set period overdrive
+			newPeriod = 1000000;
+		}
+
+		if(currPeriod != newPeriod){
+			std::cout << "compsys period changed to: " << newPeriod << "\n";
+			currPeriod = newPeriod;
+			std::string CSPeriod = std::to_string(currPeriod);
+			sprintf((char *)periodPtr, CSPeriod.c_str());
+			Timer *newTimer = new Timer(chid);
+			Timer *oldTimer = timer;
+			timer = newTimer;
+			timer->setTimer(currPeriod, currPeriod);
+			delete oldTimer;
+			printf("cs period shm after write: %s\n", periodPtr);
+		}
+	}
 
 
 
 	// ================= members =================
 
+	// timer object
+	Timer *timer;
+
 	// number of planes left
 	int numPlanes;
 
+	// current period
+	int currPeriod;
 
 	// thread members
 	pthread_t computerSystemThread;
@@ -723,15 +782,17 @@ private:
 	// shm members
 	// airspace shm
 	int shm_airspace;
-	void *ptr_airspace;
+	void *airspacePtr;
 	std::vector<aircraft *> flyingPlanesInfo;
 	std::vector<trajectoryPrediction *> trajectoryPredictions;
 
+	// period shm
+	int shm_period;
+	void *periodPtr;
+
 	// display shm
 	int shm_display;
-	void *ptr_display;
-
-
+	void *displayPtr;
 
 	friend class Plane;
 
