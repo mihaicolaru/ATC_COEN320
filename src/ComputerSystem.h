@@ -52,7 +52,6 @@ public:
 	// construcor
 	ComputerSystem(int numberOfPlanes){
 		numPlanes = numberOfPlanes;
-		predIndex = 0;
 		initialize();
 	}
 
@@ -143,6 +142,7 @@ public:
 		while(1){
 			if(rcvid == 0){
 
+//				std::cout << "before read airspace\n";
 				pthread_mutex_lock(&mutex);
 				// ================= read airspace shm =================
 				std::string readBuffer = "";
@@ -223,13 +223,13 @@ public:
 												prediction->posZ.push_back(currZ);
 
 												bool outOfBounds = false;
-												if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+												if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
 													outOfBounds = true;
 												}
-												if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+												if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
 													outOfBounds = true;
 												}
-												if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+												if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
 													outOfBounds = true;
 												}
 												if(outOfBounds){
@@ -239,7 +239,7 @@ public:
 
 											}
 											// set prediction index to next, keep for computation
-											prediction->t = predIndex + 1;
+											prediction->t = 1;
 											prediction->keep = true;
 										}	
 									}
@@ -283,13 +283,13 @@ public:
 								currentPrediction->posZ.push_back(currZ);
 
 								bool outOfBounds = false;
-								if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+								if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
 									outOfBounds = true;
 								}
-								if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+								if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
 									outOfBounds = true;
 								}
-								if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+								if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
 									outOfBounds = true;
 								}
 								if(outOfBounds){
@@ -299,7 +299,7 @@ public:
 							}
 
 							// set prediction index to next, keep for first computation
-							currentPrediction->t = predIndex + 1;
+							currentPrediction->t = 1;
 							currentPrediction->keep = true;
 							// add to list
 							trajectoryPredictions.push_back(currentPrediction);
@@ -356,7 +356,7 @@ public:
 											prediction->posY.clear();
 											prediction->posZ.clear();
 
-											for(int i = 1; i < 180 / (CS_PERIOD/1000000); i++){
+											for(int i = 0; i < 180 / (CS_PERIOD/1000000); i++){
 												int currX = craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0];
 												int currY = craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1];
 												int currZ = craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2];
@@ -366,13 +366,13 @@ public:
 												prediction->posZ.push_back(currZ);
 
 												bool outOfBounds = false;
-												if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+												if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
 													outOfBounds = true;
 												}
-												if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+												if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
 													outOfBounds = true;
 												}
-												if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+												if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
 													outOfBounds = true;
 												}
 												if(outOfBounds){
@@ -382,7 +382,7 @@ public:
 											}
 
 											// set prediction index to next, keep for computation
-											prediction->t = predIndex + 1;
+											prediction->t = 1;
 											prediction->keep = true;
 
 										}
@@ -428,13 +428,13 @@ public:
 								currentPrediction->posZ.push_back(currZ);
 
 								bool outOfBounds = false;
-								if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+								if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
 									outOfBounds = true;
 								}
-								if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+								if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
 									outOfBounds = true;
 								}
-								if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+								if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
 									outOfBounds = true;
 								}
 								if(outOfBounds){
@@ -446,7 +446,7 @@ public:
 							}
 
 							// set prediction index to next, keep for first computation
-							currentPrediction->t = predIndex + 1;
+							currentPrediction->t = 1;
 							currentPrediction->keep = true;
 							// add to list
 							trajectoryPredictions.push_back(currentPrediction);
@@ -505,7 +505,7 @@ public:
 					}
 					readBuffer += readChar;
 				}
-				//				std::cout << "end read airspace\n";
+//				std::cout << "end read airspace\n";
 				// ================= end read airspace =================
 
 				//				std::cout << "remaining planes after read:\n";
@@ -577,7 +577,7 @@ public:
 						// print plane prediction info
 
 						printf("plane %i predictions:\n", (*itpred)->id);
-						for(int i = predIndex; i < predIndex + (180 / (CS_PERIOD/1000000)); i++){
+						for(int i = (*itpred)->t-1; i < (*itpred)->t + (180 / (CS_PERIOD/1000000)); i++){
 							bool outOfBounds = false;
 							int currX = (*itpred)->posX.at(i);
 							int currY = (*itpred)->posY.at(i);
@@ -613,27 +613,33 @@ public:
 
 				// ================= compute airspace violations =================
 
+				std::cout << "computing airspace violations\n";
 				auto itIndex = trajectoryPredictions.begin();
 				while(itIndex != trajectoryPredictions.end()){
 					auto itNext = itIndex;
 					++itNext;
 					while(itNext != trajectoryPredictions.end()){
-						for(int i = predIndex; i < 180 / (CS_PERIOD/1000000); i++){
+						// compare predictions, starting at current
+						int j = (*itNext)->t - 1;
+						for(int i = (*itIndex)->t-1; i < (*itIndex)->t + (180 / (CS_PERIOD/1000000)); i++){
 							bool outOfBounds = false;
 							int currX = (*itIndex)->posX.at(i);
 							int currY = (*itIndex)->posY.at(i);
 							int currZ = (*itIndex)->posZ.at(i);
-							int compX = (*itNext)->posX.at(i);
-							int compY = (*itNext)->posY.at(i);
-							int compZ = (*itNext)->posZ.at(i);
+							int compX = (*itNext)->posX.at(j);
+							int compY = (*itNext)->posY.at(j);
+							int compZ = (*itNext)->posZ.at(j);
 
 							if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN || compX >= SPACE_X_MAX || compX <= SPACE_X_MIN){
+								std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in X\n";
 								outOfBounds = true;
 							}
 							if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN || compY >= SPACE_Y_MAX || compY <= SPACE_Y_MIN){
+								std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Y\n";
 								outOfBounds = true;
 							}
 							if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN || compZ >= SPACE_Z_MAX || compZ <= SPACE_Z_MIN){
+								std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Z\n";
 								outOfBounds = true;
 							}
 							if(outOfBounds){
@@ -645,11 +651,15 @@ public:
 								std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
 								break;
 							}
+
+							std::cout << "past all break statements\n";
+							j++;
 						}
 						++itNext;
 					}
 					++itIndex;
 				}
+				std::cout << "after compute airspace violations\n";
 				// ================= end compute violations =================
 
 
@@ -663,9 +673,6 @@ public:
 				pthread_mutex_unlock(&mutex);
 
 			}
-
-			// set index of predictions to next
-			predIndex++;
 
 			// termination check
 			if(numPlanes <= 0){
@@ -686,9 +693,6 @@ public:
 private:
 	// members
 	//	std::vector<map[33][33]> airspaceFrames;
-
-	// index of predictions
-	int predIndex;
 
 	// number of planes left
 	int numPlanes;
