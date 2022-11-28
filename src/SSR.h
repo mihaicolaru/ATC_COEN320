@@ -41,14 +41,14 @@ public:
 	}
 
 	int start() {
-//		std::cout << "ssr start called\n";
+		//		std::cout << "ssr start called\n";
 		if (pthread_create(&SSRthread, &attr, &SSR::startSSR, (void *)this) != EOK) {
 			SSRthread = NULL;
 		}
 	}
 
 	int stop() {
-//		std::cout << "ssr stop called\n";
+		//		std::cout << "ssr stop called\n";
 		pthread_join(SSRthread, NULL);
 		return 0;
 	}
@@ -123,6 +123,9 @@ private:
 				// lock mutex
 				pthread_mutex_lock(&mutex);
 
+				// check period shm to see if must update period
+				updatePeriod();
+
 				// read flying planes shm
 				bool writeFlying = readFlyingPlanes();
 
@@ -152,6 +155,11 @@ private:
 		ChannelDestroy(chid);
 
 		return 0;
+	}
+
+	// update ssr period based on period shm
+	void updatePeriod(){
+
 	}
 
 	// ================= read flying planes shm =================

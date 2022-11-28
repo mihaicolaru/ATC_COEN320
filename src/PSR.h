@@ -189,6 +189,9 @@ private:
 				// lock mutex
 				pthread_mutex_lock(&mutex);
 
+				// check period shm to see if must update period
+				updatePeriod();
+
 				// read waiting planes buffer
 				bool move = readWaitingPlanes();
 
@@ -216,6 +219,11 @@ private:
 		ChannelDestroy(chid);
 
 		return 0;
+	}
+
+	// update psr period based on period shm
+	void updatePeriod(){
+
 	}
 
 	// ================= read waiting planes buffer =================
