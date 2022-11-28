@@ -27,8 +27,8 @@ typedef struct
 
 typedef union
 {
-    ClientMessage  msg;             // a message can be either from a client, or
-    struct _pulse   pulse;          // a pulse
+    ClientMessage msg;             // a message can be either from a client, or
+    struct _pulse pulse;          // a pulse
 } Message;
 
 class Timer{

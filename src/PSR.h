@@ -32,20 +32,42 @@ class PSR {
 public:
 	// constructor
 	PSR(int numberOfPlanes) {
-
 		numWaitingPlanes = numberOfPlanes;
 
-		initialize(numberOfPlanes); }
+		// initialize thread and shm members
+		initialize(numberOfPlanes);
+	}
 
 	// destructor
 	~PSR() {
-
-		//		for(std::string filename : waitingFileNames){
-		//			shm_unlink(filename.c_str());
-		//		}
+		shm_unlink("waiting_planes");
+		shm_unlink("flying_planes");
 		pthread_mutex_destroy(&mutex);
 	}
 
+	// start execution function
+	void start() {
+//		std::cout << "psr start called\n";
+		time(&at);
+		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
+			PSRthread = NULL;
+		}
+	}
+
+	// join execution thread
+	int stop() {
+//		std::cout << "psr stop called\n";
+		pthread_join(PSRthread, NULL);
+		return 0;
+	}
+
+	// entry point for execution thread
+	static void *startPSR(void *context) { ((PSR *)context)->operatePSR(); }
+
+
+private:
+
+	// member functions
 	int initialize(int numberOfPlanes) {
 		// set thread in detached state
 		int rc = pthread_attr_init(&attr);
@@ -80,7 +102,7 @@ public:
 			char readChar = *((char *)ptr_waitingPlanes + i);
 
 			if(readChar == ','){
-//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
+				//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
 
 				waitingFileNames.push_back(FD_buffer);
 
@@ -146,24 +168,7 @@ public:
 		return 0;
 	}
 
-	void start() {
-		//		std::cout << "PSR start called\n";
-		time(&at);
-		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
-			PSRthread = NULL;
-		}
-	}
-
-	int stop() {
-		//		std::cout << "psr stop called\n";
-		pthread_join(PSRthread, NULL);
-		return 0;
-	}
-
-	// entry point for execution thread
-	static void *startPSR(void *context) { ((PSR *)context)->operatePSR(); }
-
-	// execution thread
+	// ================= execution thread =================
 	void *operatePSR(void) {
 		time(&at);
 		//		std::cout << "start exec\n";
@@ -181,200 +186,29 @@ public:
 
 		while (1) {
 			if (rcvid == 0) {
-
-				bool move = false;
-
-				int i = 0;
+				// lock mutex
 				pthread_mutex_lock(&mutex);
 
-				// ================= read waiting planes shm =================
-				auto it = planePtrs.begin();
-				while(it != planePtrs.end()){
-					//					char readChar = *((char *)*it);
+				// check period shm to see if must update period
+				updatePeriod();
 
-					// find first comma after the ID
-					int j = 0;
-					for(; j < 4; j++){
-						if(*((char*)*it + j) == ','){
-							break;
-						}
-					}
-
-					// extract arrival time
-					int curr_arrival_time = atoi((char *)(*it) + j + 1);
-					//						std::cout << "current plane arrival time: " << curr_arrival_time << "\n";
-
-					// compare with current time
-					// if t_arrival < t_current
-					time (&et);
-					double t_current = difftime(et,at);
-					//					std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
-
-					if(curr_arrival_time <= t_current){
-						move = true;
-
-						//						std::cout << "psr found " << waitingFileNames.at(i) << " to move\n";
-
-						// add current fd to airspace fd vector
-						flyingFileNames.push_back(waitingFileNames.at(i));
-
-						// remove current fd from waiting planes fd vector
-						waitingFileNames.erase(waitingFileNames.begin() + i);
-
-						// remove current plane from ptr vector
-						it = planePtrs.erase(it);
-
-						numWaitingPlanes--;
-						//						std::cout << "psr number of waiting planes: " << numWaitingPlanes << "\n";
-					}
-					else{
-						i++;	// only increment if no plane to transfer
-						++it;
-					}
-				}
-				// ================= end read waiting planes =================
-
-
-				//				std::cout << "psr waiting planes buffer:\n";
-				//				for(std::string name : waitingFileNames){
-				//					std::cout << name << "\n";
-				//				}
-				//
-				//				std::cout << "psr flying planes buffer:\n";
-				//				for(std::string name : flyingFileNames){
-				//					std::cout << name << "\n";
-				//				}
-
-				//				pthread_mutex_unlock(&mutex);
-
-
-
-
-				// ================= write to flying planes shm =================
-
+				// read waiting planes buffer
+				bool move = readWaitingPlanes();
 
 				// if planes to be moved are found, write to flying planes shm
 				if(move){
-					//					pthread_mutex_lock(&mutex);
-					//					printf("airspace before move: %s\n", ptr_airspace);
-					//					std::cout << "planes to move:\n";
-					//					for(std::string name : airspaceFileNames){
-					//						std::cout << name << "\n";
-					//					}
-					// read current flying planes shm
-					std::string currentAirspace = "";
-					std::string currentPlane = "";
-
-					int i = 0;
-
-					// ================= read current to flying planes shm =================
-					while(i < SIZE_SHM_SSR){
-						char readChar = *((char *)ptr_flyingPlanes + i);
-
-						if(readChar == ';'){
-							// termination character found
-							if(i == 0){
-								// no planes
-								//								std::cout << "PSR no current flying planes in shm\n";
-								break;
-							}
-
-							//							printf("psr last plane: %s\n", currentPlane);
-							// check if plane already in list
-							bool inList = true;
-
-							//							std::cout << "checking if " << currentPlane << " already in flying list\n";
-							for(std::string name : flyingFileNames){
-								if(currentPlane == name){
-									inList = false;
-									//									std::cout << currentPlane << " already in list\n";
-									break;
-								}
-							}
-
-							if(inList){
-								//								std::cout << "psr added " << currentPlane << "\n";
-								currentAirspace += currentPlane;
-								currentAirspace += ',';
-							}
-
-							break;
-						}
-						else if(readChar == ','){
-							// check if plane already in list
-
-							//							printf("psr found plane: %s\n", currentPlane);
-
-							bool inList = true;
-							//							std::cout << "checking if " << currentPlane << " already in flying list\n";
-							for(std::string name : flyingFileNames){
-								if(currentPlane == name){
-									inList = false;
-									//									std::cout << currentPlane << " already in list\n";
-									break;
-								}
-							}
-
-							if(inList){
-								//								std::cout << "psr added " << currentPlane << "\n";
-								currentAirspace += currentPlane;
-								currentAirspace += ',';
-							}
-
-							currentPlane = "";
-							i++;
-							continue;
-						}
-
-						currentPlane += readChar;
-						i++;
-					}
-					// ================= end read current flying planes =================
-
-					//					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
-
-					// ================= add planes to transfer buffer =================
-					// add planes to transfer
-					i = 0;
-					for(std::string filename : flyingFileNames){
-						if(i == 0){
-							currentAirspace += filename;
-							i++;
-						}
-						else{
-							currentAirspace += ",";
-							currentAirspace += filename;
-						}
-					}
-					currentAirspace += ";";
-					// ================= end add planes to buffer =================
-
-					//					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
-
-
-					// ================= write to flying planes shm =================
-					//					pthread_mutex_lock(&mutex);
-
-					// write new flying planes list to shm
-					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
-					//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
-					// ================= end write =================
-					//					pthread_mutex_unlock(&mutex);
+					writeFlyingPlanes();
 				}
-
-				// ================= end write to flying planes =================
-
-
 
 				// clear buffer for next flying planes list
 				flyingFileNames.clear();
 
+				// unlock mutex
 				pthread_mutex_unlock(&mutex);
-
 
 				// check for PSR termination
 				if(numWaitingPlanes <= 0){
-					//					std::cout << "psr done\n";
+//					std::cout << "psr done\n";
 					ChannelDestroy(chid);
 					return 0;
 				}
@@ -387,10 +221,174 @@ public:
 		return 0;
 	}
 
-	// add function to change timer settings depending on n (congestion control)
+	// update psr period based on period shm
+	void updatePeriod(){
 
-private:
+	}
 
+	// ================= read waiting planes buffer =================
+	bool readWaitingPlanes(){
+		bool move = false;
+		int i = 0;
+		auto it = planePtrs.begin();
+		while(it != planePtrs.end()){
+			//					char readChar = *((char *)*it);
+
+			// find first comma after the ID
+			int j = 0;
+			for(; j < 4; j++){
+				if(*((char*)*it + j) == ','){
+					break;
+				}
+			}
+
+			// extract arrival time
+			int curr_arrival_time = atoi((char *)(*it) + j + 1);
+			//						std::cout << "current plane arrival time: " << curr_arrival_time << "\n";
+
+			// compare with current time
+			// if t_arrival < t_current
+			time (&et);
+			double t_current = difftime(et,at);
+			//					std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
+
+			if(curr_arrival_time <= t_current){
+				move = true;
+
+				//						std::cout << "psr found " << waitingFileNames.at(i) << " to move\n";
+
+				// add current fd to airspace fd vector
+				flyingFileNames.push_back(waitingFileNames.at(i));
+
+				// remove current fd from waiting planes fd vector
+				waitingFileNames.erase(waitingFileNames.begin() + i);
+
+				// remove current plane from ptr vector
+				it = planePtrs.erase(it);
+
+				numWaitingPlanes--;
+				//						std::cout << "psr number of waiting planes: " << numWaitingPlanes << "\n";
+			}
+			else{
+				i++;	// only increment if no plane to transfer
+				++it;
+			}
+		}
+		//				std::cout << "psr waiting planes buffer:\n";
+		//				for(std::string name : waitingFileNames){
+		//					std::cout << name << "\n";
+		//				}
+		//
+		//				std::cout << "psr flying planes buffer:\n";
+		//				for(std::string name : flyingFileNames){
+		//					std::cout << name << "\n";
+		//				}
+
+//		std::cout << "psr end read waiting planes\n";
+		return move;
+	}
+
+	// ================= write to flying planes shm =================
+	void writeFlyingPlanes(){
+		//					pthread_mutex_lock(&mutex);
+		//					printf("airspace before move: %s\n", ptr_airspace);
+		//					std::cout << "planes to move:\n";
+		//					for(std::string name : airspaceFileNames){
+		//						std::cout << name << "\n";
+		//					}
+		// read current flying planes shm
+		std::string currentAirspace = "";
+		std::string currentPlane = "";
+
+		int i = 0;
+
+		// read current to flying planes shm
+		while(i < SIZE_SHM_SSR){
+			char readChar = *((char *)ptr_flyingPlanes + i);
+
+			if(readChar == ';'){
+				// termination character found
+				if(i == 0){
+					// no planes
+					//								std::cout << "PSR no current flying planes in shm\n";
+					break;
+				}
+
+				//							printf("psr last plane: %s\n", currentPlane);
+				// check if plane already in list
+				bool inList = true;
+
+				//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+				for(std::string name : flyingFileNames){
+					if(currentPlane == name){
+						inList = false;
+						//									std::cout << currentPlane << " already in list\n";
+						break;
+					}
+				}
+
+				if(inList){
+					//								std::cout << "psr added " << currentPlane << "\n";
+					currentAirspace += currentPlane;
+					currentAirspace += ',';
+				}
+
+				break;
+			}
+			else if(readChar == ','){
+				// check if plane already in list
+
+				//							printf("psr found plane: %s\n", currentPlane);
+
+				bool inList = true;
+				//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+				for(std::string name : flyingFileNames){
+					if(currentPlane == name){
+						inList = false;
+						//									std::cout << currentPlane << " already in list\n";
+						break;
+					}
+				}
+
+				if(inList){
+					//								std::cout << "psr added " << currentPlane << "\n";
+					currentAirspace += currentPlane;
+					currentAirspace += ',';
+				}
+
+				currentPlane = "";
+				i++;
+				continue;
+			}
+
+			currentPlane += readChar;
+			i++;
+		}
+		// end read current flying planes
+
+		//					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
+
+		// add planes to transfer buffer
+		i = 0;
+		for(std::string filename : flyingFileNames){
+			if(i == 0){
+				currentAirspace += filename;
+				i++;
+			}
+			else{
+				currentAirspace += ",";
+				currentAirspace += filename;
+			}
+		}
+		currentAirspace += ";";
+		//					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
+
+		// write new flying planes list to shm
+		sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
+		//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+	}
+
+	// member parameters
 	int numWaitingPlanes;
 
 	// thread members
