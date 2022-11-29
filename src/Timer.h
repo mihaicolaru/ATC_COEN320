@@ -58,7 +58,7 @@ public:
 //		std::cout << "timer created\n";
 	}
 
-	int setTimer(uint64_t offset, int period){
+	int setTimer(int offset, int period){
 		timer.it_value.tv_sec = offset / ONE_MILLION;
 		timer.it_value.tv_nsec = (offset % ONE_MILLION) * ONE_THOUSAND;
 		timer.it_interval.tv_sec = period / ONE_MILLION;

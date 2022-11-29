@@ -26,16 +26,16 @@
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
 
+// PSR Specifications
+#define SIZE_SHM_PLANES 4096
+#define SIZE_SHM_PSR 4096
+#define PSR_PERIOD 2000000
+
 // SSR Specifications
 #define SIZE_SHM_AIRSPACE 4096
 #define SIZE_SHM_SSR 4096
 #define SIZE_SHM_PSR 4096
 #define SSR_PERIOD 2000000
-
-// PSR Specifications
-#define SIZE_SHM_PLANES 4096
-#define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 2000000
 
 // Display Specifications
 #define SCALER 3000
@@ -45,6 +45,7 @@
 
 // Computer system specifications
 #define CS_PERIOD 2000000
+#define SIZE_SHM_PERIOD 4096
 
 // Plane Specifications
 #define OFFSET 1000000
