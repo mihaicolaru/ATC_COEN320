@@ -125,7 +125,7 @@ private:
 			exit(1);
 		}
 
-		// map airspace shm
+		// map period shm
 		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
 		if (periodPtr == MAP_FAILED) {
 			perror("in map() PSR: period");
@@ -144,6 +144,72 @@ private:
 		if(displayPtr == MAP_FAILED) {
 			perror("in copmsys map() display");
 			exit(1);
+		}
+
+		// open comm shm
+		int shm_comm = shm_open("waiting_planes", O_RDONLY, 0666);
+		if (shm_comm == -1) {
+			perror("in compsys shm_open() comm");
+			exit(1);
+		}
+
+		// map comm shm
+		void * commPtr = mmap(0, SIZE_SHM_PSR, PROT_READ, MAP_SHARED, shm_comm, 0);
+		if (commPtr == MAP_FAILED) {
+			perror("in compsys map() comm");
+			exit(1);
+		}
+
+		// generate pointers to plane shms
+		std::string buffer = "";
+
+		for(int i = 0; i < SIZE_SHM_PSR; i++){
+			char readChar = *((char *)commPtr + i);
+
+			if(readChar == ','){
+				//				std::cout << "compsys initialize() found a planeFD: " << FD_buffer << "\n";
+
+				// open shm for current plane
+				int shm_plane = shm_open(buffer.c_str(), O_RDWR, 0666);
+				if(shm_plane == -1){
+					perror("in compsys shm_open() plane");
+
+					exit(1);
+				}
+
+				// map memory for current plane
+				void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+				if (ptr == MAP_FAILED) {
+					perror("in compsys map() plane");
+					exit(1);
+				}
+
+				commPtrs.push_back(ptr);
+
+				buffer = "";
+				continue;
+			}
+			else if(readChar == ';'){
+				// open shm for current plane
+				int shm_plane = shm_open(buffer.c_str(), O_RDWR, 0666);
+				if(shm_plane == -1){
+					perror("in compsys shm_open() plane");
+
+					exit(1);
+				}
+
+				// map memory for current plane
+				void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+				if (ptr == MAP_FAILED) {
+					perror("in compsys map() plane");
+					exit(1);
+				}
+
+				commPtrs.push_back(ptr);
+				break;
+			}
+
+			buffer += readChar;
 		}
 
 		return 0;
@@ -597,7 +663,7 @@ private:
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+			//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
@@ -609,9 +675,9 @@ private:
 			}
 			else{
 				// print plane info
-//				printf("plane %i:\n", (*it)->id);
-//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				//				printf("plane %i:\n", (*it)->id);
+				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
@@ -723,6 +789,14 @@ private:
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
 						//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
+						//TODO: send command to plane
+						// find comm
+						for(void * comm : commPtrs){
+
+							// find comm shm index
+							// write command
+
+						}
 						break;
 					}
 					//					std::cout << "incrementing j counter for prediction compare\n";
@@ -756,12 +830,12 @@ private:
 		}
 
 		if(currPeriod != newPeriod){
-			std::cout << "compsys period changed to: " << newPeriod << "\n";
+//			std::cout << "compsys period changed to: " << newPeriod << "\n";
 			currPeriod = newPeriod;
 			std::string CSPeriod = std::to_string(currPeriod);
 			sprintf((char *)periodPtr, CSPeriod.c_str());
 			timer->setTimer(currPeriod, currPeriod);
-			printf("cs period shm after write: %s\n", periodPtr);
+//			printf("cs period shm after write: %s\n", periodPtr);
 		}
 	}
 
@@ -801,6 +875,9 @@ private:
 	// display shm
 	int shm_display;
 	void *displayPtr;
+
+	// comm list (same as waiting list psr)
+	std::vector<void *> commPtrs;
 
 	friend class Plane;
 

@@ -124,8 +124,8 @@ private:
 		updateString();
 
 
-		// initial write
-		sprintf((char* )ptr, "%s", planeString.c_str());
+		// initial write + space for comm system
+		sprintf((char* )ptr, "%s;", planeString.c_str());
 
 		return 0;
 	}
@@ -183,7 +183,34 @@ private:
 
 	// check comm system for potential commands
 	void answerComm(){
+		bool end = false;
+		char readChar;
 
+		// find end of plane info
+		int i = 0;
+		for(; i < SIZE_SHM_PLANES; i++){
+			readChar = *((char *)ptr + i);
+			if(readChar == ';'){
+				break;	// found end
+			}
+		}
+
+		// check for command presence
+		if((char *)ptr + i + 1 == ";"){
+			std::cout << "no command\n";
+			return;
+		}
+
+		// set index to next
+		i++;
+		readChar = *((char *)ptr + i);
+		std::string buffer = "";
+		while(readChar != ';'){
+			buffer += readChar;
+			readChar = *((char *)ptr + ++i);
+		}
+
+		std::cout << getFD() << " read command: " << buffer << "\n";
 	}
 
 	// update position based on speed
