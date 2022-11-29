@@ -226,7 +226,7 @@ private:
 
 				// check for PSR termination
 				if(numWaitingPlanes <= 0){
-					//					std::cout << "psr done\n";
+					std::cout << "psr done\n";
 					ChannelDestroy(chid);
 					return 0;
 				}
@@ -278,7 +278,7 @@ private:
 			// if t_arrival < t_current
 			time (&et);
 			double t_current = difftime(et,at);
-			//					std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
+			//			std::cout << "psr current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
 
 			if(curr_arrival_time <= t_current){
 				move = true;

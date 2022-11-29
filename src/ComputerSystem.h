@@ -207,7 +207,7 @@ private:
 
 	// ================= read airspace shm =================
 	void readAirspace(){
-		//				std::cout << "before read airspace\n";
+		//		std::cout << "before read airspace\n";
 		std::string readBuffer = "";
 		int j = 0;
 
@@ -228,22 +228,22 @@ private:
 			if(readChar == ';'){
 				// i=0 no planes found
 				if(i == 0){
-					//							std::cout << "compsys no flying planes\n";
+					//					std::cout << "compsys no flying planes\n";
 					break;
 				}
 
 				// load last field in buffer
 				vel[2] = atoi(readBuffer.c_str());
-				//						std::cout << "compsys found last plane " << id << ", checking if already in list\n";
+				//				std::cout << "compsys found last plane " << id << ", checking if already in list\n";
 
 				// check if already in airspace, if yes update with current data
 				bool inList = false;
 				for(aircraft *craft : flyingPlanesInfo){
-					//							std::cout << "target plane id: " << id << "\n";
-					//							std::cout << "current plane: " << craft->id << "\n";
+					//					std::cout << "target plane id: " << id << "\n";
+					//					std::cout << "current plane: " << craft->id << "\n";
 
 					if(craft->id == id){
-						//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+						//						std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 						// if found, update with current info
 						craft->pos[0] = pos[0];
 						craft->pos[1] = pos[1];
@@ -256,22 +256,28 @@ private:
 						// it is already in the list, do not add new
 						inList = true;
 
-						//								std::cout << "checking plane " << craft->id << " predictions\n";
+						//						std::cout << "checking plane " << craft->id << " predictions\n";
 
 						for(trajectoryPrediction *prediction : trajectoryPredictions){
 							if(prediction->id == craft->id){
-								//										std::cout << "prediction for plane " << craft->id << " found\n";
+								//								std::cout << "prediction for plane " << craft->id << " found\n";
+
+								// if end of prediction reached, break
+								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
+									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									break;
+								}
 
 								// check posx, posy and poz if same
 								if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
-									//											std::cout << "predictions match\n";
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									prediction->keep = true;
 									prediction->t++;
 								}
 								// update the prediction
 								else{
-									//											std::cout << "predictions do not match, recomputing predictions\n";
+									//									std::cout << "predictions do not match, recomputing predictions\n";
 									prediction->posX.clear();
 									prediction->posY.clear();
 									prediction->posZ.clear();
@@ -317,7 +323,7 @@ private:
 
 				// if plane was not already in the list, add it
 				if(!inList){
-					//							std::cout << "compsys found new plane " << id << "\n";
+					//					std::cout << "compsys found new plane " << id << "\n";
 					// new pointer to struct, set members from read
 					aircraft *currentAircraft = new aircraft();
 					currentAircraft->id = id;
@@ -331,7 +337,7 @@ private:
 					currentAircraft->keep = true;	// keep for first computation
 					flyingPlanesInfo.push_back(currentAircraft);	// add to struct pointer vector
 
-					//							std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
+					//					std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
 					trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
 					currentPrediction->id = currentAircraft->id;
@@ -356,7 +362,7 @@ private:
 							outOfBounds = true;
 						}
 						if(outOfBounds){
-							//									std::cout << "end of plane " << currentPrediction->id << " predictions\n";
+							//							std::cout << "end of plane " << currentPrediction->id << " predictions\n";
 							break;
 						}
 					}
@@ -375,16 +381,16 @@ private:
 			else if(readChar == '/'){
 				// load last value in buffer
 				vel[2] = atoi(readBuffer.c_str());
-				//						std::cout << "compsys found next plane " << id << ", checking if already in list\n";
+				//				std::cout << "compsys found next plane " << id << ", checking if already in list\n";
 
 				// check if already in airspace, if yes update with current data
 				bool inList = false;
 				for(aircraft *craft : flyingPlanesInfo){
-					//							std::cout << "target plane id: " << id << "\n";
-					//							std::cout << "current plane: " << craft->id << "\n";
+					//					std::cout << "target plane id: " << id << "\n";
+					//					std::cout << "current plane: " << craft->id << "\n";
 
 					if(craft->id == id){
-						//								std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
+						//						std::cout << "compsys: plane " << craft->id << " already in list, updating new values\n";
 
 						// if found, update with current info
 						craft->pos[0] = pos[0];
@@ -398,15 +404,21 @@ private:
 						// if already in list, do not add new
 						inList = true;
 
-						//								std::cout << "checking plane " << craft->id << " predictions\n";
+						//						std::cout << "checking plane " << craft->id << " predictions\n";
 
 						for(trajectoryPrediction *prediction : trajectoryPredictions){
 							if(prediction->id == craft->id){
-								//										std::cout << "prediction for plane " << craft->id << " found\n";
+								//								std::cout << "prediction for plane " << craft->id << " found\n";
+
+								// if end of prediction reached, break
+								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
+									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									break;
+								}
 
 								// check posx, posy and poz if same
 								if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
-									//											std::cout << "predictions match\n";
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									prediction->keep = true;
 									prediction->t++;
@@ -414,7 +426,7 @@ private:
 
 								// update the prediction
 								else{
-									//											std::cout << "predictions do not match, recomputing predictions\n";
+									//									std::cout << "predictions do not match, recomputing predictions\n";
 									prediction->posX.clear();
 									prediction->posY.clear();
 									prediction->posZ.clear();
@@ -463,7 +475,7 @@ private:
 				// if plane was not already in the list, add it
 				if(!inList){
 					// new pointer to struct, set members from read
-					//							std::cout << "compsys found new plane " << id << "\n";
+					//					std::cout << "compsys found new plane " << id << "\n";
 					aircraft *currentAircraft = new aircraft();
 					currentAircraft->id = id;
 					currentAircraft->t_arrival = arrTime;
@@ -476,7 +488,7 @@ private:
 					currentAircraft->keep = true;	// keep for first computation
 					flyingPlanesInfo.push_back(currentAircraft);	// add to struct pointer vector
 
-					//							std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
+					//					std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
 					trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
 					currentPrediction->id = currentAircraft->id;
@@ -501,7 +513,7 @@ private:
 							outOfBounds = true;
 						}
 						if(outOfBounds){
-							//									std::cout << "reached end of plane " << currentPrediction->id << " predictions\n";
+							//							std::cout << "reached end of plane " << currentPrediction->id << " predictions\n";
 							break;
 						}
 
@@ -522,7 +534,7 @@ private:
 			}
 			// found next data field in current plane
 			else if(readChar == ','){
-				//						std::cout << "found next plane field data: " << readBuffer << "\n";
+				//				std::cout << "found next plane field data: " << readBuffer << "\n";
 				switch(j){
 				// add whichever character the index j has arrived to
 				case 0:
@@ -568,7 +580,7 @@ private:
 			}
 			readBuffer += readChar;
 		}
-		//				std::cout << "end read airspace\n";
+		//		std::cout << "end read airspace\n";
 		//				std::cout << "remaining planes after read:\n";
 		//				for(aircraft *craft : flyingPlanesInfo){
 		//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
@@ -585,7 +597,7 @@ private:
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-			//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
@@ -597,9 +609,9 @@ private:
 			}
 			else{
 				// print plane info
-				//				printf("plane %i:\n", (*it)->id);
-				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				printf("plane %i:\n", (*it)->id);
+				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
@@ -728,7 +740,7 @@ private:
 		int newPeriod = 0;
 		if(flyingPlanesInfo.size() <= 5){
 			// set period low
-			newPeriod = 1000000;
+			newPeriod = 5000000;
 		}
 		if(flyingPlanesInfo.size() > 5 && flyingPlanesInfo.size() <= 20){
 			// set period medium

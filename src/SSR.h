@@ -160,7 +160,7 @@ private:
 
 				// check for termination
 				if(numPlanes <= 0){
-					//					std::cout << "ssr done\n";
+					std::cout << "ssr done\n";
 					ChannelDestroy(chid);
 
 					return 0;
@@ -329,7 +329,7 @@ private:
 
 				// reduce number of planes
 				numPlanes--;
-				//						std::cout << "ssr number of planes: " << numPlanes << "\n";
+				std::cout << "ssr number of planes: " << numPlanes << "\n";
 			}
 			// plane not terminated, read all data and add to buffer for airspace
 			else{
