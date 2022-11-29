@@ -125,7 +125,8 @@ private:
 
 
 		// initial write + space for comm system
-		sprintf((char* )ptr, "%s;", planeString.c_str());
+		sprintf((char* )ptr, "%s0;", planeString.c_str());
+//		printf("%s\n", ptr);
 
 		return 0;
 	}
@@ -183,7 +184,7 @@ private:
 
 	// check comm system for potential commands
 	void answerComm(){
-		bool end = false;
+//		printf("answerComm() read: %s\n", ptr);
 		char readChar;
 
 		// find end of plane info
@@ -195,22 +196,70 @@ private:
 			}
 		}
 
+
 		// check for command presence
-		if((char *)ptr + i + 1 == ";"){
-			std::cout << "no command\n";
+		if(*((char *)ptr + i + 1) == ';' || *((char *)ptr + i + 1) == '0' ){
+//			std::cout << "no command\n";
 			return;
 		}
 
 		// set index to next
 		i++;
+		int startIndex = i;
 		readChar = *((char *)ptr + i);
 		std::string buffer = "";
 		while(readChar != ';'){
 			buffer += readChar;
 			readChar = *((char *)ptr + ++i);
 		}
+//		readChar = *((char *)ptr + ++i);
+		buffer += ';';
+//		std::cout << getFD() << " read command: " << buffer << "\n";
 
-		std::cout << getFD() << " read command: " << buffer << "\n";
+
+		// parse command
+		std::string parseBuf = "";
+		int currParam;
+		for(int j = 0; j <= buffer.size(); j++){
+			char currChar = buffer[j];
+
+			switch(currChar){
+			case ';':
+				// reached end of command, apply command
+//				std::cout << "setting vel[" << currParam << "] to " << parseBuf << "\n";
+				speed[currParam] = std::stoi(parseBuf);
+				break;
+			case '/':
+				// read end of one velocity command, apply command, clear buffer
+//				std::cout << "setting vel[" << currParam << "] to " << parseBuf << "\n";
+				speed[currParam] = std::stoi(parseBuf);
+				parseBuf = "";
+				continue;
+			case 'x':
+				// command to x velocity
+				currParam = 0;
+				continue;
+			case 'y':
+				// command to y velocity
+				currParam = 1;
+				continue;
+			case 'z':
+				// command to z velocity
+				currParam = 2;
+				continue;
+			case ',':
+				// spacer, clear buffer
+				parseBuf = "";
+				continue;
+			default:
+				parseBuf += currChar;
+				continue;
+			}
+		}
+
+		// remove command
+		sprintf((char*)ptr + startIndex, "0;");
+//		printf("after remove command: %s\n", ptr);
 	}
 
 	// update position based on speed
@@ -236,22 +285,22 @@ private:
 	int checkLimits(){
 		if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
 			planeString = "terminated";
-			sprintf((char* )ptr, "%s", planeString.c_str());
+			sprintf((char* )ptr, "%s0;", planeString.c_str());
 			return 0;
 		}
 		if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
 			planeString = "terminated";
-			sprintf((char* )ptr, "%s", planeString.c_str());
+			sprintf((char* )ptr, "%s0;", planeString.c_str());
 			return 0;
 		}
 		if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
 			planeString = "terminated";
-			sprintf((char* )ptr, "%s", planeString.c_str());
+			sprintf((char* )ptr, "%s0;", planeString.c_str());
 			return 0;
 		}
 
 		// write plane to shared memory
-		sprintf((char* )ptr, "%s", planeString.c_str());
+		sprintf((char* )ptr, "%s0;", planeString.c_str());
 		return 1;
 	}
 
