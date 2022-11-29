@@ -597,7 +597,7 @@ private:
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
@@ -609,9 +609,9 @@ private:
 			}
 			else{
 				// print plane info
-				printf("plane %i:\n", (*it)->id);
-				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+//				printf("plane %i:\n", (*it)->id);
+//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
@@ -760,11 +760,7 @@ private:
 			currPeriod = newPeriod;
 			std::string CSPeriod = std::to_string(currPeriod);
 			sprintf((char *)periodPtr, CSPeriod.c_str());
-			Timer *newTimer = new Timer(chid);
-			Timer *oldTimer = timer;
-			timer = newTimer;
 			timer->setTimer(currPeriod, currPeriod);
-			delete oldTimer;
 			printf("cs period shm after write: %s\n", periodPtr);
 		}
 	}

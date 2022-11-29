@@ -246,11 +246,7 @@ private:
 		if(newPeriod != currPeriod){
 			std::cout << "psr period changed to " << newPeriod << "\n";
 			currPeriod = newPeriod;
-			Timer *newTimer = new Timer(chid);
-			Timer *oldTimer = timer;
-			timer = newTimer;
 			timer->setTimer(currPeriod, currPeriod);
-			delete oldTimer;
 		}
 	}
 
