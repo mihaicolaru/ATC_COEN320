@@ -7,17 +7,13 @@
 #include <unistd.h>
 
 #include "ComputerSystem.h"
-
+#include "Limits.h"
 #include "ATC.h"
 
-#define SIZE_DISPLAY 4096
-
-#define SIZE 4096
 
 int main() {
 
 	ATC atc;
-	atc.start();
 
 	return 0;
 

@@ -24,19 +24,7 @@
 #include <time.h>
 
 #include "Timer.h"
-
-#define OFFSET 1000000
-#define PLANE_PERIOD 1000000
-
-#define SPACE_X_MIN 0
-#define SPACE_X_MAX 100000
-#define SPACE_Y_MIN 0
-#define SPACE_Y_MAX 100000
-#define SPACE_Z_MIN 0
-#define SPACE_Z_MAX 25000
-#define SPACE_ELEVATION 15000
-
-#define SIZE_SHM_PLANES 4096
+#include "Limits.h"
 
 class Plane {
 public:
@@ -51,8 +39,8 @@ public:
 			speed[i] = _speed[i];
 		}
 
+		// initialize thread members
 		initialize();
-
 	}
 
 	// destructor
@@ -61,6 +49,41 @@ public:
 		pthread_mutex_destroy(&mutex);
 	}
 
+	// call static function to start thread
+	int start(){
+//		std::cout << getFD() << " start called\n";
+		if(pthread_create(&planeThread, &attr, &Plane::startPlane, (void *) this) != EOK){
+			planeThread = NULL;
+		}
+
+		return 0;
+	}
+
+	// join execution thread
+	bool stop(){
+//		std::cout << getFD() << " stop called\n";
+		pthread_join(planeThread, NULL);
+		return 0;
+	}
+
+	// entry point for execution thread
+	static void *startPlane(void *context){
+		//		std::cout << "updateStart called\n";
+		// set priority
+		((Plane *)context)->flyPlane();
+		return 0;
+	}
+
+	// get plane file descriptor as const char array
+	const char* getFD(){
+		return fileName.c_str();
+	}
+
+
+
+private:
+
+	// initialize thread and shm members
 	int initialize(){
 
 		// set thread in detached state
@@ -78,7 +101,7 @@ public:
 		fileName = "plane_" + std::to_string(ID);
 
 
-//		printf("Plane %i filename: %s\n", ID, fileName.c_str());
+		//		printf("Plane %i filename: %s\n", ID, fileName.c_str());
 
 		// open shm object
 		shm_fd = shm_open(fileName.c_str(), O_CREAT | O_RDWR, 0666);
@@ -107,33 +130,8 @@ public:
 		return 0;
 	}
 
-	// call static function to start thread
-	int start(){
-		//		std::cout << "start called\n";
-		if(pthread_create(&planeThread, &attr, &Plane::updateStart, (void *) this) != EOK){
-			planeThread = NULL;
-		}
-
-		return 0;
-	}
-
-	// join execution thread
-	bool stop(){
-
-		pthread_join(planeThread, NULL);
-		return 0;
-	}
-
-	// entry point for execution thread
-	static void *updateStart(void *context){
-		//		std::cout << "updateStart called\n";
-		// set priority
-		((Plane *)context)->updatePosition();
-		return 0;
-	}
-
 	// update position every second from position and speed
-	void* updatePosition(void){
+	void* flyPlane(void){
 		// create channel to link timer
 		int chid = ChannelCreate(0);
 		if(chid == -1){
@@ -152,41 +150,24 @@ public:
 		while(1) {
 			if(start){
 				// first cycle, wait for arrival time
+//				std::cout << getFD() << " first iteration\n";
 				start = false;
 			}
 			else{
 				if(rcvid == 0){
-					for(int i = 0; i < 3; i++){
-						position[i] = position[i] + speed[i];
-					}
-					// save modifications to string
-					updateString();
-
 					pthread_mutex_lock(&mutex);
 
+					// check comm system for potential command
+					answerComm();
+
+					// update position based on speed
+					updatePosition();
+
 					// check for airspace limits, write to shm
-
-					if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
-						planeString = "terminated";
-						sprintf((char* )ptr, "%s", planeString.c_str());
+					if(checkLimits() == 0){
 						ChannelDestroy(chid);
 						return 0;
 					}
-					if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
-						planeString = "terminated";
-						sprintf((char* )ptr, "%s", planeString.c_str());
-						ChannelDestroy(chid);
-						return 0;
-					}
-					if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
-						planeString = "terminated";
-						sprintf((char* )ptr, "%s", planeString.c_str());
-						ChannelDestroy(chid);
-						return 0;
-					}
-
-					// write plane to shared memory
-					sprintf((char* )ptr, "%s", planeString.c_str());
 
 					pthread_mutex_unlock(&mutex);
 				}
@@ -200,6 +181,22 @@ public:
 		return 0;
 	}
 
+	// check comm system for potential commands
+	void answerComm(){
+
+	}
+
+	// update position based on speed
+	void updatePosition(){
+//		std::cout << getFD() << " updating position\n";
+		for(int i = 0; i < 3; i++){
+			position[i] = position[i] + speed[i];
+		}
+		// save modifications to string
+		updateString();
+//		Print();
+	}
+
 	// stringify plane data members
 	void updateString(){
 		std::string s = ",";
@@ -208,30 +205,35 @@ public:
 				std::to_string(speed[0]) + s + std::to_string(speed[1]) + s + std::to_string(speed[2]) + ";";
 	}
 
-	std::string getString(){
-		return planeString;
+	// check airspace limits for operation termination
+	int checkLimits(){
+		if(position[0] < SPACE_X_MIN || position[0] > SPACE_X_MAX){
+			planeString = "terminated";
+			sprintf((char* )ptr, "%s", planeString.c_str());
+			return 0;
+		}
+		if(position[1] < SPACE_Y_MIN || position[1] > SPACE_Y_MAX){
+			planeString = "terminated";
+			sprintf((char* )ptr, "%s", planeString.c_str());
+			return 0;
+		}
+		if(position[2] < SPACE_Z_MIN || position[2] > SPACE_Z_MAX){
+			planeString = "terminated";
+			sprintf((char* )ptr, "%s", planeString.c_str());
+			return 0;
+		}
+
+		// write plane to shared memory
+		sprintf((char* )ptr, "%s", planeString.c_str());
+		return 1;
 	}
 
+
+	// print plane info
 	void Print(){
 		std::cout << planeString << "\n";
 	}
 
-	const char* getFD(){
-		return fileName.c_str();
-	}
-
-	std::string getFileString(){
-		return fileName;
-	}
-
-	int receiveCommand(){
-		// receive command from comm subsystem via computer, adjust speed or position
-		// adjust member variables according to command
-		return 0;
-	}
-
-
-private:
 	// data members
 	int arrivalTime;
 	int ID;

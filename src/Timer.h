@@ -17,22 +17,7 @@
 #include <sys/siginfo.h>
 #include <sys/neutrino.h>
 
-#define ONE_THOUSAND	1000
-#define ONE_MILLION		1000000
-
-// message send definitions
-
-// messages
-#define MT_WAIT_DATA        2       // message from client
-#define MT_SEND_DATA        3       // message from client
-
-// pulses
-#define CODE_TIMER          1       // pulse from timer
-
-// message reply definitions
-#define MT_OK               0       // message to client
-#define MT_TIMEDOUT         1       // message to client
-
+#include "Limits.h"
 // message structure
 typedef struct
 {
@@ -42,8 +27,8 @@ typedef struct
 
 typedef union
 {
-    ClientMessage  msg;             // a message can be either from a client, or
-    struct _pulse   pulse;          // a pulse
+    ClientMessage msg;             // a message can be either from a client, or
+    struct _pulse pulse;          // a pulse
 } Message;
 
 class Timer{
@@ -73,7 +58,7 @@ public:
 //		std::cout << "timer created\n";
 	}
 
-	int setTimer(uint64_t offset, int period){
+	int setTimer(int offset, int period){
 		timer.it_value.tv_sec = offset / ONE_MILLION;
 		timer.it_value.tv_nsec = (offset % ONE_MILLION) * ONE_THOUSAND;
 		timer.it_interval.tv_sec = period / ONE_MILLION;

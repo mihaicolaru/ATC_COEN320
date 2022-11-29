@@ -28,35 +28,24 @@
 #include <sys/neutrino.h>
 #include <time.h>
 
-
-#define SCALER 3000
-#define MARGIN 100000
-#define PERIOD_D 5000000 //5sec period
-
-#define SIZE_DISPLAY 4096
-#define SIZE_SHM_DISPLAY 4096
+#include "Limits.h"
 
 const int block_count = (int)MARGIN/(int)SCALER;
-
-//need sporadic task?
-//Add vector source library, should be computer system
 
 class Display{
 public:
 	//constructor
-	//int _posX[], int _posY[], int _posZ[]
-	Display(int planeCount){
-		nbOfPlanes = planeCount;
+	Display(){
 		initialize();
 	}
 	//destructor
 	~Display(){
-
+		shm_unlink("display");
 	}
 
 	//Initialize thread
 	int initialize(){
-		// set thread in detached state
+		/*Make threads in detached state*/
 		int rc = pthread_attr_init(&attr);
 		if (rc){
 			printf("ERROR, RC from pthread_attr_init() is %d \n", rc);
@@ -66,90 +55,44 @@ public:
 		if (rc){
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
-		initialize_shm();
 
-	}
 
-	void initialize_shm(){
+		/*Create shared memory for display*/
 		// open list of waiting planes shm
-//		printf("shm section\n");
-//		printf("%i\n", nbOfPlanes);
-
-		shm_displayData= shm_open("display", O_RDWR, 0666);
-		if (shm_displayData == -1) {
+		shm_display= shm_open("display", O_RDWR, 0666);
+		if (shm_display == -1) {
 			perror("in shm_open() Display");
 			exit(1);
 		}
-//		printf("finished reading to displayData\n");
 
-		ptr_positionData = mmap(0, SIZE_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_displayData, 0);
+		//		printf("finished reading to displayData\n");
 
-		if (ptr_positionData == MAP_FAILED) {
+		ptr_display = mmap(0, SIZE_SHM_DISPLAY, PROT_READ | PROT_WRITE, MAP_SHARED, shm_display, 0);
+
+		if (ptr_display == MAP_FAILED) {
 
 			perror("in map() Display");
 			exit(1);
 		}
-//		printf("finished mapping to positionData\n");
+		//		printf("finished mapping to positionData\n");
 
-
-		int axis=0;//0=X, 1=Y, 2=Z;
-		std::string buffer = "";
-		int planeNb=0;
-		// read waiting planes shm
-		for (int i = 0; i < (nbOfPlanes * 20); i++) {
-			char readChar = *((char *)ptr_positionData + i);
-			if(readChar == ',' || readChar == ';'){
-				if(buffer.length() >0){
-					switch(axis){
-					case 0:
-						posX[planeNb]= stoi(buffer);
-						break;
-					case 1:
-						posY[planeNb]= stoi(buffer);
-						break;
-					case 2:
-						posZ[planeNb]= stoi(buffer);
-						break;
-					case 3:
-						displayZ[planeNb]= stoi(buffer);
-						break;
-					}
-				}
-				if(readChar == ','){
-					axis++;
-					buffer = "";
-					//					printf("Axis: %i\n",axis);
-				}else if(readChar == ';'){
-					axis=0;
-					planeNb++;
-					buffer = "";
-					//					printf("Axis: %i\n",axis);
-				}
-
-			}else{
-				buffer+=readChar;
-				//				printf("Buffer: %s\n",buffer);
-			}
-		}
 	}
 
-	int start(){
-//		std::cout << "Start display function\n";
-		if(pthread_create(&displayThread, &attr, &Display::updateStart, (void *) this) != EOK){
+	void start(){
+		//		std::cout << "Start display function\n";
+		if (pthread_create(&displayThread, &attr, &Display::startDisplay, (void *)this) != EOK) {
 			displayThread = NULL;
 		}
-		return 0;
 	}
 
-	bool stop(){
+	int stop(){
 		pthread_join(displayThread, NULL);
-		std::cout << "Display terminated\n";
+		//		std::cout << "Display terminated\n";
 		return 0;
 	}
 
-	static void *updateStart(void *context){
+	static void *startDisplay(void *context){
 		((Display *)context)->updateDisplay();
-		return 0;
 	}
 
 	void *updateDisplay(void){
@@ -164,17 +107,97 @@ public:
 
 		int rcvid;
 		Message msg;
-
 		int i = 1;
-		while(i-- > 0){
-//			printMap();
-//			printHeight();
+		while(1){
+			if(rcvid==0){
+				//				printf("Display read: %s\n", ptr_display);
+				int axis=0;//0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
+				std::string buffer = "";
+				std::string x="",y="",z="",display_bit="";
+				std::string id ="";
+				for (int i = 0; i < SIZE_SHM_DISPLAY; i++) {
+					char readChar = *((char *)ptr_display + i);
+					if(readChar == 't'){
+						std::cout << "display done\n";
+						ChannelDestroy(chid);
+						return 0;
+					}
+					if(readChar==';'){
+						//Wherever has the \ delimiter, ends the reading
+						break;
+					}else if(readChar == ',' || readChar == '/'){
+						if(buffer.length() >0){
+							//							std::cout << "display buffer: " << buffer << "\n";//Check buffer
+							switch(axis){
+							case 0:
+								id= buffer;
+								break;
+							case 1:
+								x = buffer;
+								break;
+							case 2:
+								y = buffer;
+								break;
+							case 3:
+								z = buffer;
+								break;
+							case 4:
+								display_bit= buffer;
+								break;
+							}
+						}
+						if(readChar == ','){
+							axis++;
+							buffer = "";
+						}else if(readChar == '/'){
+							//One plane has finished loading, parsing and reset control values
+							map[stoi(x)/SCALER][stoi(y)/SCALER]+=id + "\\";
+							if(display_bit=="1"){
+								height_display = height_display + "Plane " + id + " has height of " + z + "meters\n";
+							}
+							x="";
+							y="";
+							z="";
+							id="";
+							display_bit="";
+							axis=0;
+							buffer = "";
+						}
+
+					}else{
+						buffer+=readChar;//Keep loading buffer until delimiter has been detected
+						//				printf("Buffer: %s\n",buffer);
+					}
+					//					printf("%c", readChar);
+				}
+				printMap();
+				height_display = "";
+				memset(map,0, sizeof(map[0][0]) * block_count * block_count);//Reset map to 0 for next set
+			}
+
 			rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
+
 		}
 
 		ChannelDestroy(chid);
 		return 0;
 
+	}
+
+	//Print map and the height
+	void printMap(){
+		for(int j=0; j<block_count;j++){
+			for(int k=0; k<block_count;k++){
+				if(map[j][k] == ""){
+					//					printf("_|");
+				}
+				else{
+					//					printf("%s|", map[j][k]);
+				}
+			}
+			//			std::cout << std::endl;
+		}
+		//		printf("%s", height_display.c_str());
 	}
 
 private:
@@ -186,57 +209,14 @@ private:
 	pthread_t displayThread;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex_d;// mutex for display
-	//	int posX[5] = {50000,12000,30000,20000,70000};
-	//	int posY[5] = {19000,12000,7000, 50000, 90000};
-	//	int posZ[5] = {12000,15000,11000,10000,10000};
 
-	//size not dynamic
-	int posX[5];
-	int posY[5];
-	int posZ[5];
-	int displayZ[5];
-	int map[block_count][block_count]={{0}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
-
-	int nbOfPlanes=0;
+	//Temporary values
+	std::string map[block_count][block_count]={{""}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
+	std::string height_display="";
 
 	// shm members
-	int shm_displayData;//Display required info
-	void *ptr_positionData;
-
-
-	void printMap(){
-		size_t n = sizeof(posX)/sizeof(int);
-		memset(map, 0, sizeof(map[0][0]) * block_count * block_count);//Reset to 0 for next set
-		if(nbOfPlanes != 0){
-			for(int i=0; i<nbOfPlanes; i++){
-				map[posX[i]/SCALER][posY[i]/SCALER]++;
-			}
-
-			for(int j=0; j<block_count;j++){
-				for(int k=0; k<block_count;k++){
-					if(map[j][k] == 0)
-						printf("_|");
-					else
-						printf("%d|", map[j][k]);
-
-				}
-				std::cout << std::endl;
-			}
-		}
-	}
-
-	void printHeight(){
-		if(nbOfPlanes  != 0){
-			for(int i =0; i<nbOfPlanes;i++){
-				if(displayZ[i]==1){
-					std::cout << "Plane " << std::to_string(i+1) <<
-							" has at height: " << std::to_string(posZ[i])
-							<< std::endl;
-				}
-
-			}
-		}
-	}
+	int shm_display;//Display required info
+	void *ptr_display;
 };
 
 #endif /* DISPLAY_H_ */

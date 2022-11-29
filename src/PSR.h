@@ -21,10 +21,8 @@
 #include "SSR.h"
 #include "Plane.h"
 #include "Timer.h"
+#include "Limits.h"
 
-#define SIZE_SHM_PLANES 4096
-#define SIZE_SHM_PSR 4096
-#define PSR_PERIOD 2000000
 
 // forward declaration
 class Plane;
@@ -33,17 +31,46 @@ class SSR;
 class PSR {
 public:
 	// constructor
-	PSR(int numberOfPlanes) { initialize(numberOfPlanes); }
+	PSR(int numberOfPlanes) {
+		currPeriod = PSR_PERIOD;
+		numWaitingPlanes = numberOfPlanes;
+
+		// initialize thread and shm members
+		initialize(numberOfPlanes);
+	}
 
 	// destructor
 	~PSR() {
-
-		for(std::string filename : waitingFileNames){
-			shm_unlink(filename.c_str());
-		}
+		shm_unlink("waiting_planes");
+		shm_unlink("flying_planes");
+		shm_unlink("period");
 		pthread_mutex_destroy(&mutex);
+		delete timer;
 	}
 
+	// start execution function
+	void start() {
+		//		std::cout << "psr start called\n";
+		time(&at);
+		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
+			PSRthread = NULL;
+		}
+	}
+
+	// join execution thread
+	int stop() {
+		//		std::cout << "psr stop called\n";
+		pthread_join(PSRthread, NULL);
+		return 0;
+	}
+
+	// entry point for execution thread
+	static void *startPSR(void *context) { ((PSR *)context)->operatePSR(); }
+
+
+private:
+
+	// member functions
 	int initialize(int numberOfPlanes) {
 		// set thread in detached state
 		int rc = pthread_attr_init(&attr);
@@ -64,21 +91,21 @@ public:
 		}
 
 		// map waiting planes shm
-		ptr_waitingPlanes = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
-		if (ptr_waitingPlanes == MAP_FAILED) {
+		waitingPlanesPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_waitingPlanes, 0);
+		if (waitingPlanesPtr == MAP_FAILED) {
 			perror("in map() PSR");
 			exit(1);
 		}
 
-//		printf("waiting planes: %s\n", ptr_waitingPlanes);
+		//		printf("waiting planes: %s\n", ptr_waitingPlanes);
 
 		std::string FD_buffer = "";
 
 		for(int i = 0; i < SIZE_SHM_PSR; i++){
-			char readChar = *((char *)ptr_waitingPlanes + i);
+			char readChar = *((char *)waitingPlanesPtr + i);
 
 			if(readChar == ','){
-//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
+				//				std::cout << "PSR initialize() found a planeFD: " << FD_buffer << "\n";
 
 				waitingFileNames.push_back(FD_buffer);
 
@@ -130,37 +157,35 @@ public:
 		// open ssr shm
 		shm_flyingPlanes = shm_open("flying_planes", O_RDWR, 0666);
 		if (shm_flyingPlanes == -1) {
-			perror("in shm_open() ATC: airspace");
+			perror("in shm_open() PSR: airspace");
 			exit(1);
 		}
 
 		// map shm
-		ptr_flyingPlanes = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
-		if (ptr_flyingPlanes == MAP_FAILED) {
+		flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED, shm_flyingPlanes, 0);
+		if (flyingPlanesPtr == MAP_FAILED) {
 			printf("map failed airspace\n");
 			return -1;
 		}
 
-		return 0;
-	}
-
-	void start() {
-		//		std::cout << "PSR start called\n";
-		time(&at);
-		if (pthread_create(&PSRthread, &attr, &PSR::startPSR, (void *)this) != EOK) {
-			PSRthread = NULL;
+		// open period shm
+		shm_period = shm_open("period", O_RDONLY, 0666);
+		if (shm_period == -1) {
+			perror("in shm_open() PSR: period");
+			exit(1);
 		}
-	}
 
-	int stop() {
-		pthread_join(PSRthread, NULL);
+		// map airspace shm
+		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ, MAP_SHARED, shm_period, 0);
+		if (periodPtr == MAP_FAILED) {
+			perror("in map() PSR: period");
+			exit(1);
+		}
+
 		return 0;
 	}
 
-	// entry point for execution thread
-	static void *startPSR(void *context) { ((PSR *)context)->operatePSR(); }
-
-	// execution thread
+	// ================= execution thread =================
 	void *operatePSR(void) {
 		time(&at);
 		//		std::cout << "start exec\n";
@@ -170,123 +195,38 @@ public:
 			std::cout << "couldn't create channel!\n";
 		}
 
-		Timer timer(chid);
-		timer.setTimer(PSR_PERIOD, PSR_PERIOD);
+		Timer *newTimer = new Timer(chid);
+		timer = newTimer;
+		timer->setTimer(PSR_PERIOD, PSR_PERIOD);
 
 		int rcvid;
 		Message msg;
 
 		while (1) {
 			if (rcvid == 0) {
-				bool move = false;
+				// lock mutex
+				pthread_mutex_lock(&mutex);
 
-				int i = 0;
-				for(void* ptr : planePtrs){
-					std::string readBuffer = "";
-					char readChar = *((char *)ptr);
+				// check period shm to see if must update period
+				updatePeriod(chid);
 
-					if(readChar == 't'){
-						// remove and update ssr
-//						std::cout << "terminated\n";
-
-						move = true;
-
-						// remove current fd from waiting planes fd vector
-						waitingFileNames.erase(waitingFileNames.begin() + i);
-
-						// remove current plane from ptr vector
-						planePtrs.erase(planePtrs.begin() + i);
-
-						i--;	// reduce number of planes
-					}
-					else{
-						// find first comma after the ID
-						int j = 0;
-						for(; j < 4; j++){
-							if(*((char*)ptr + j) == ','){
-								break;
-							}
-						}
-
-						// extract arrival time
-						int curr_arrival_time = atoi((char *)ptr + j + 1);
-//						std::cout << "current plane arrival time: " << curr_arrival_time << "\n";
-
-						// compare with current time
-						// if t_arrival < t_current
-						time (&et);
-						double t_current = difftime(et,at);
-//						std::cout << "current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
-
-						if(curr_arrival_time < t_current){
-							move = true;
-
-							// add current fd to airspace fd vector
-							flyingFileNames.push_back(waitingFileNames.at(i));
-
-							// remove current fd from waiting planes fd vector
-							waitingFileNames.erase(waitingFileNames.begin() + i);
-
-							// remove current plane from ptr vector
-							planePtrs.erase(planePtrs.begin() + i);
-
-							i--;	// reduce number of planes
-
-						}
-					}
-					i++;
-				}
+				// read waiting planes buffer
+				bool move = readWaitingPlanes();
 
 				// if planes to be moved are found, write to flying planes shm
 				if(move){
-					//					printf("airspace before move: %s\n", ptr_airspace);
-//					std::cout << "planes to move:\n";
-//					for(std::string name : airspaceFileNames){
-//						std::cout << name << "\n";
-//					}
-					// read current airspace vector
-					std::string currentAirspace = "";
-
-					int i = 0;
-					while(i < SIZE_SHM_SSR){
-						char readChar = *((char *)ptr_flyingPlanes + i);
-
-						if(readChar == ';'){
-							// termination character found
-							break;
-						}
-
-						currentAirspace += readChar;
-						i++;
-					}
-
-					// add planes to transfer
-					for(std::string filename : flyingFileNames){
-						if(i == 0){
-							currentAirspace += filename;
-							i++;
-						}
-						else{
-							currentAirspace += ",";
-							currentAirspace += filename;
-						}
-					}
-					currentAirspace += ";";
-
-					pthread_mutex_lock(&mutex);
-
-					// write new airspace to shm
-					sprintf((char *)ptr_flyingPlanes , "%s", currentAirspace.c_str());
-
-					//					printf("airspace after move: %s\n", ptr_airspace);
-					flyingFileNames.clear();
-
-					pthread_mutex_unlock(&mutex);
+					writeFlyingPlanes();
 				}
 
+				// clear buffer for next flying planes list
+				flyingFileNames.clear();
+
+				// unlock mutex
+				pthread_mutex_unlock(&mutex);
+
 				// check for PSR termination
-				if(planePtrs.size() == 0){
-//					std::cout << "PSR terminated\n";
+				if(numWaitingPlanes <= 0){
+					std::cout << "psr done\n";
 					ChannelDestroy(chid);
 					return 0;
 				}
@@ -299,9 +239,189 @@ public:
 		return 0;
 	}
 
-	// add function to change timer settings depending on n (congestion control)
+	// update psr period based on period shm
+	void updatePeriod(int chid){
+		printf("psr read period: %s\n", periodPtr);
+		int newPeriod = atoi((char *)periodPtr);
+		if(newPeriod != currPeriod){
+			std::cout << "psr period changed to " << newPeriod << "\n";
+			currPeriod = newPeriod;
+			timer->setTimer(currPeriod, currPeriod);
+		}
+	}
 
-private:
+	// ================= read waiting planes buffer =================
+	bool readWaitingPlanes(){
+		bool move = false;
+		int i = 0;
+		auto it = planePtrs.begin();
+		while(it != planePtrs.end()){
+			//					char readChar = *((char *)*it);
+
+			// find first comma after the ID
+			int j = 0;
+			for(; j < 4; j++){
+				if(*((char*)*it + j) == ','){
+					break;
+				}
+			}
+
+			// extract arrival time
+			int curr_arrival_time = atoi((char *)(*it) + j + 1);
+			//						std::cout << "current plane arrival time: " << curr_arrival_time << "\n";
+
+			// compare with current time
+			// if t_arrival < t_current
+			time (&et);
+			double t_current = difftime(et,at);
+			//			std::cout << "psr current time: " << t_current << ", arrival time: " << curr_arrival_time << "\n";
+
+			if(curr_arrival_time <= t_current){
+				move = true;
+
+				//						std::cout << "psr found " << waitingFileNames.at(i) << " to move\n";
+
+				// add current fd to airspace fd vector
+				flyingFileNames.push_back(waitingFileNames.at(i));
+
+				// remove current fd from waiting planes fd vector
+				waitingFileNames.erase(waitingFileNames.begin() + i);
+
+				// remove current plane from ptr vector
+				it = planePtrs.erase(it);
+
+				numWaitingPlanes--;
+				//						std::cout << "psr number of waiting planes: " << numWaitingPlanes << "\n";
+			}
+			else{
+				i++;	// only increment if no plane to transfer
+				++it;
+			}
+		}
+		//				std::cout << "psr waiting planes buffer:\n";
+		//				for(std::string name : waitingFileNames){
+		//					std::cout << name << "\n";
+		//				}
+		//
+		//				std::cout << "psr flying planes buffer:\n";
+		//				for(std::string name : flyingFileNames){
+		//					std::cout << name << "\n";
+		//				}
+
+		//		std::cout << "psr end read waiting planes\n";
+		return move;
+	}
+
+	// ================= write to flying planes shm =================
+	void writeFlyingPlanes(){
+		//					pthread_mutex_lock(&mutex);
+		//					printf("airspace before move: %s\n", ptr_airspace);
+		//					std::cout << "planes to move:\n";
+		//					for(std::string name : airspaceFileNames){
+		//						std::cout << name << "\n";
+		//					}
+		// read current flying planes shm
+		std::string currentAirspace = "";
+		std::string currentPlane = "";
+
+		int i = 0;
+
+		// read current to flying planes shm
+		while(i < SIZE_SHM_SSR){
+			char readChar = *((char *)flyingPlanesPtr + i);
+
+			if(readChar == ';'){
+				// termination character found
+				if(i == 0){
+					// no planes
+					//								std::cout << "PSR no current flying planes in shm\n";
+					break;
+				}
+
+				//							printf("psr last plane: %s\n", currentPlane);
+				// check if plane already in list
+				bool inList = true;
+
+				//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+				for(std::string name : flyingFileNames){
+					if(currentPlane == name){
+						inList = false;
+						//									std::cout << currentPlane << " already in list\n";
+						break;
+					}
+				}
+
+				if(inList){
+					//								std::cout << "psr added " << currentPlane << "\n";
+					currentAirspace += currentPlane;
+					currentAirspace += ',';
+				}
+
+				break;
+			}
+			else if(readChar == ','){
+				// check if plane already in list
+
+				//							printf("psr found plane: %s\n", currentPlane);
+
+				bool inList = true;
+				//							std::cout << "checking if " << currentPlane << " already in flying list\n";
+				for(std::string name : flyingFileNames){
+					if(currentPlane == name){
+						inList = false;
+						//									std::cout << currentPlane << " already in list\n";
+						break;
+					}
+				}
+
+				if(inList){
+					//								std::cout << "psr added " << currentPlane << "\n";
+					currentAirspace += currentPlane;
+					currentAirspace += ',';
+				}
+
+				currentPlane = "";
+				i++;
+				continue;
+			}
+
+			currentPlane += readChar;
+			i++;
+		}
+		// end read current flying planes
+
+		//					std::cout << "psr flying planes before adding new: " << currentAirspace << "\n";
+
+		// add planes to transfer buffer
+		i = 0;
+		for(std::string filename : flyingFileNames){
+			if(i == 0){
+				currentAirspace += filename;
+				i++;
+			}
+			else{
+				currentAirspace += ",";
+				currentAirspace += filename;
+			}
+		}
+		currentAirspace += ";";
+		//					std::cout << "psr flying planes after adding new: " << currentAirspace << "\n";
+
+		// write new flying planes list to shm
+		sprintf((char *)flyingPlanesPtr , "%s", currentAirspace.c_str());
+		//					printf("psr flying planes after write: %s\n", ptr_flyingPlanes);
+	}
+
+	// member parameters
+	// timer object
+	Timer *timer;
+
+	// number of waiting planes left
+	int numWaitingPlanes;
+
+	// current period
+	int currPeriod;
+
 	// thread members
 	pthread_t PSRthread;
 	pthread_attr_t attr;
@@ -314,7 +434,7 @@ private:
 	// shm members
 	// waiting planes list
 	int shm_waitingPlanes;
-	void *ptr_waitingPlanes;
+	void *waitingPlanesPtr;
 	std::vector<std::string> waitingFileNames;
 
 	// access waiting planes
@@ -322,8 +442,12 @@ private:
 
 	// airspace list
 	int shm_flyingPlanes;
-	void *ptr_flyingPlanes;
+	void *flyingPlanesPtr;
 	std::vector<std::string> flyingFileNames;
+
+	// period shm
+	int shm_period;
+	void *periodPtr;
 
 	friend class Plane;
 };
