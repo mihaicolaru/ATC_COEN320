@@ -40,10 +40,10 @@
 // Display Specifications
 #define SCALER 3000
 #define MARGIN 100000
-#define PERIOD_D 5000000 //5sec period
+#define PERIOD_D 5000000 // 5sec period
 #define SIZE_SHM_DISPLAY 4096
 
-// Computer system specifications
+// Computer System specifications
 #define CS_PERIOD 2000000
 #define SIZE_SHM_PERIOD 4096
 
@@ -60,20 +60,20 @@
 #define SIZE_SHM_PLANES 4096
 
 // Timer Specifications
-#define ONE_THOUSAND	1000
-#define ONE_MILLION		1000000
+#define ONE_THOUSAND 1000
+#define ONE_MILLION 1000000
 
-// message send definitions
+// Message send definitions
 
-// messages
-#define MT_WAIT_DATA        2       // message from client
-#define MT_SEND_DATA        3       // message from client
+// Messages
+#define MT_WAIT_DATA 2 // Message from client
+#define MT_SEND_DATA 3 // Message from client
 
-// pulses
-#define CODE_TIMER          1       // pulse from timer
+// Pulses
+#define CODE_TIMER 1 // Pulse from timer
 
-// message reply definitions
-#define MT_OK               0       // message to client
-#define MT_TIMEDOUT         1       // message to client
+// Message reply definitions
+#define MT_OK 0       // Message to client
+#define MT_TIMEDOUT 1 // Message to client
 
 #endif /* LIMITS_H_ */
