@@ -338,9 +338,45 @@ private:
 							if(prediction->id == craft->id){
 								//								std::cout << "prediction for plane " << craft->id << " found\n";
 
-								// if end of prediction reached, break
+								// if end of prediction reached, update and break
 								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
-									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									std::cout << "plane " << prediction->id << ": prediction already at end of scope, recomputing\n";
+									prediction->posX.clear();
+									prediction->posY.clear();
+									prediction->posZ.clear();
+
+									for(int i = 0; i < (180 / (CS_PERIOD/1000000)); i++){
+										int currX = craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0];
+										int currY = craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1];
+										int currZ = craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2];
+
+										prediction->posX.push_back(currX);
+										prediction->posY.push_back(currY);
+										prediction->posZ.push_back(currZ);
+
+										bool outOfBounds = false;
+										if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
+											outOfBounds = true;
+										}
+										if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
+											outOfBounds = true;
+										}
+										if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
+											outOfBounds = true;
+										}
+										if(outOfBounds){
+											//													std::cout << "end of plane " << prediction->id << " prediction\n";
+											break;
+										}
+									}
+									// set termination character
+									prediction->posX.push_back(-1);
+									prediction->posY.push_back(-1);
+									prediction->posZ.push_back(-1);
+									// set prediction index to next, keep for computation
+									prediction->t = 1;
+									prediction->keep = true;
+
 									break;
 								}
 
@@ -494,7 +530,43 @@ private:
 
 								// if end of prediction reached, break
 								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
-									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									std::cout << "plane " << prediction->id << ": prediction already at end of scope, recomputing\n";
+									prediction->posX.clear();
+									prediction->posY.clear();
+									prediction->posZ.clear();
+
+									for(int i = 0; i < (180 / (CS_PERIOD/1000000)); i++){
+										int currX = craft->pos[0] + i * (CS_PERIOD/1000000) * craft->vel[0];
+										int currY = craft->pos[1] + i * (CS_PERIOD/1000000) * craft->vel[1];
+										int currZ = craft->pos[2] + i * (CS_PERIOD/1000000) * craft->vel[2];
+
+										prediction->posX.push_back(currX);
+										prediction->posY.push_back(currY);
+										prediction->posZ.push_back(currZ);
+
+										bool outOfBounds = false;
+										if(currX > SPACE_X_MAX || currX < SPACE_X_MIN){
+											outOfBounds = true;
+										}
+										if(currY > SPACE_Y_MAX || currY < SPACE_Y_MIN){
+											outOfBounds = true;
+										}
+										if(currZ > SPACE_Z_MAX || currZ < SPACE_Z_MIN){
+											outOfBounds = true;
+										}
+										if(outOfBounds){
+											//													std::cout << "end of plane " << prediction->id << " prediction\n";
+											break;
+										}
+									}
+									// set termination character
+									prediction->posX.push_back(-1);
+									prediction->posY.push_back(-1);
+									prediction->posZ.push_back(-1);
+									// set prediction index to next, keep for computation
+									prediction->t = 1;
+									prediction->keep = true;
+
 									break;
 								}
 
@@ -823,7 +895,7 @@ private:
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
-						//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
+						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
 						//TODO: get command from console
 
 						bool currComm = false;
@@ -834,7 +906,7 @@ private:
 							int commId = atoi((char *)comm);
 
 							if(commId == (*itIndex)->id){
-								//								std::cout << "found plane " << (*itIndex)->id << " comm, sending message\n";
+								std::cout << "found plane " << (*itIndex)->id << " comm, sending message\n";
 								// find command index in plane shm
 								int k = 0;
 								char readChar;
@@ -848,7 +920,7 @@ private:
 								k++;
 
 								// command string
-								std::string command = "x,500/y,500/z,100;";
+								std::string command = "z,100;";
 
 								// write command to plane
 								sprintf((char *)comm + k, "%s", command.c_str());
@@ -857,7 +929,7 @@ private:
 								currComm = true;
 							}
 							if(commId == (*itNext)->id){
-								//								std::cout << "found plane " << (*itNext)->id << " comm, sending message\n";
+								std::cout << "found plane " << (*itNext)->id << " comm, sending message\n";
 								// find command index in plane shm
 								int k = 0;
 								char readChar;
@@ -871,7 +943,7 @@ private:
 								k++;
 
 								// command string
-								std::string command = "x,500/y,500/z,100;";
+								std::string command = "z,100;";
 
 								// write command to plane
 								sprintf((char *)comm + k, "%s", command.c_str());
