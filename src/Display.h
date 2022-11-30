@@ -30,7 +30,7 @@
 
 #include "Limits.h"
 
-const int block_count = (int)MARGIN/(int)SCALER;
+const int block_count = (int)MARGIN/(int)SCALER + 1;
 
 class Display{
 public:
@@ -110,6 +110,7 @@ public:
 		int i = 1;
 		while(1){
 			if(rcvid==0){
+				pthread_mutex_lock(&mutex);
 				//				printf("Display read: %s\n", ptr_display);
 				int axis=0;//0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
 				std::string buffer = "";
@@ -151,10 +152,10 @@ public:
 							buffer = "";
 						}else if(readChar == '/'){
 							//One plane has finished loading, parsing and reset control values
-							if(map[stoi(x)/SCALER][stoi(y)/SCALER] == ""){
-								map[stoi(x)/SCALER][stoi(y)/SCALER]+=id;
+							if(map[(100000-stoi(y))/SCALER][stoi(x)/SCALER] == ""){
+								map[(100000-stoi(y))/SCALER][stoi(x)/SCALER]+=id;
 							}else{
-								map[stoi(x)/SCALER][stoi(y)/SCALER]+="\\" + id ;
+								map[(100000-stoi(y))/SCALER][stoi(x)/SCALER]+="\\" + id ;
 							}
 							if(display_bit=="1"){
 								height_display = height_display + "Plane " + id + " has height of " + z + "meters\n";
@@ -174,6 +175,7 @@ public:
 					}
 					//					printf("%c", readChar);
 				}
+				pthread_mutex_unlock(&mutex);
 				printMap();
 				height_display = "";
 				memset(map,0, sizeof(map[0][0]) * block_count * block_count);//Reset map to 0 for next set
@@ -193,15 +195,15 @@ public:
 		for(int j=0; j<block_count;j++){
 			for(int k=0; k<block_count;k++){
 				if(map[j][k] == ""){
-					printf("_|");
+//					printf("_|");
 				}
 				else{
-					printf("%s|", map[j][k]);
+//					printf("%s|", map[j][k]);
 				}
 			}
-			std::cout << std::endl;
+//			std::cout << std::endl;
 		}
-		printf("%s\n", height_display.c_str());
+//		printf("%s\n", height_display.c_str());
 	}
 
 private:
@@ -212,7 +214,7 @@ private:
 	//threads
 	pthread_t displayThread;
 	pthread_attr_t attr;
-	pthread_mutex_t mutex_d;// mutex for display
+	pthread_mutex_t mutex;// mutex for display
 
 	//Temporary values
 	std::string map[block_count][block_count]={{""}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
