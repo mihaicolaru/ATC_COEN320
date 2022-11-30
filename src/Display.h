@@ -151,10 +151,10 @@ public:
 							buffer = "";
 						}else if(readChar == '/'){
 							//One plane has finished loading, parsing and reset control values
-							if(map[stoi(x)/SCALER][stoi(y)/SCALER] == ""){
-								map[stoi(x)/SCALER][stoi(y)/SCALER]+=id;
+							if(map[(100000-stoi(y))/SCALER][stoi(x)/SCALER] == ""){
+								map[(100000-stoi(y))/SCALER][stoi(x)/SCALER]+=id;
 							}else{
-								map[stoi(x)/SCALER][stoi(y)/SCALER]+="\\" + id ;
+								map[(100000-stoi(y))/SCALER][stoi(x)/SCALER]+="\\" + id ;
 							}
 							if(display_bit=="1"){
 								height_display = height_display + "Plane " + id + " has height of " + z + "meters\n";
