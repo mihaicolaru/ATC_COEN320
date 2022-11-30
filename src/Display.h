@@ -30,7 +30,7 @@
 
 #include "Limits.h"
 
-const int block_count = (int)MARGIN/(int)SCALER;
+const int block_count = (int)MARGIN/(int)SCALER + 1;
 
 class Display{
 public:
