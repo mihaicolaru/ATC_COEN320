@@ -177,10 +177,10 @@ private:
 
 	// update ssr period based on period shm
 	void updatePeriod(int chid){
-		printf("ssr read period: %s\n", periodPtr);
+//		printf("ssr read period: %s\n", periodPtr);
 		int newPeriod = atoi((char *)periodPtr);
 		if(newPeriod != currPeriod){
-			std::cout << "ssr period changed to " << newPeriod << "\n";
+//			std::cout << "ssr period changed to " << newPeriod << "\n";
 			currPeriod = newPeriod;
 			timer->setTimer(currPeriod, currPeriod);
 		}
