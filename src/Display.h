@@ -151,7 +151,11 @@ public:
 							buffer = "";
 						}else if(readChar == '/'){
 							//One plane has finished loading, parsing and reset control values
-							map[stoi(x)/SCALER][stoi(y)/SCALER]+=id + "\\";
+							if(map[stoi(x)/SCALER][stoi(y)/SCALER] == ""){
+								map[stoi(x)/SCALER][stoi(y)/SCALER]+=id;
+							}else{
+								map[stoi(x)/SCALER][stoi(y)/SCALER]+="\\" + id ;
+							}
 							if(display_bit=="1"){
 								height_display = height_display + "Plane " + id + " has height of " + z + "meters\n";
 							}
@@ -189,15 +193,15 @@ public:
 		for(int j=0; j<block_count;j++){
 			for(int k=0; k<block_count;k++){
 				if(map[j][k] == ""){
-					//					printf("_|");
+					printf("_|");
 				}
 				else{
-					//					printf("%s|", map[j][k]);
+					printf("%s|", map[j][k]);
 				}
 			}
-			//			std::cout << std::endl;
+			std::cout << std::endl;
 		}
-		//		printf("%s", height_display.c_str());
+		printf("%s\n", height_display.c_str());
 	}
 
 private:

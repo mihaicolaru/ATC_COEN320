@@ -184,7 +184,7 @@ protected:
 		int per = CS_PERIOD;
 		std::string CSPeriod = std::to_string(per);
 		sprintf((char *)periodPtr, CSPeriod.c_str());
-		printf("atc period shm: %s\n", periodPtr);
+//		printf("atc period shm: %s\n", periodPtr);
 		//		std::cout << "atc after writing period shm\n";
 
 		// ============ initialize shm for display ============

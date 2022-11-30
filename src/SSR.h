@@ -161,6 +161,7 @@ private:
 				// check for termination
 				if(numPlanes <= 0){
 					std::cout << "ssr done\n";
+					sprintf((char *)airspacePtr, "terminated");
 					ChannelDestroy(chid);
 
 					return 0;
@@ -177,10 +178,10 @@ private:
 
 	// update ssr period based on period shm
 	void updatePeriod(int chid){
-		printf("ssr read period: %s\n", periodPtr);
+//		printf("ssr read period: %s\n", periodPtr);
 		int newPeriod = atoi((char *)periodPtr);
 		if(newPeriod != currPeriod){
-			std::cout << "ssr period changed to " << newPeriod << "\n";
+//			std::cout << "ssr period changed to " << newPeriod << "\n";
 			currPeriod = newPeriod;
 			timer->setTimer(currPeriod, currPeriod);
 		}
@@ -325,7 +326,7 @@ private:
 
 				// reduce number of planes
 				numPlanes--;
-				std::cout << "ssr number of planes: " << numPlanes << "\n";
+//				std::cout << "ssr number of planes: " << numPlanes << "\n";
 			}
 			// plane not terminated, read all data and add to buffer for airspace
 			else{

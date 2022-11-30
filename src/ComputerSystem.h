@@ -60,6 +60,9 @@ public:
 	~ComputerSystem(){
 		shm_unlink("airspace");
 		shm_unlink("display");
+		for(std::string name : commNames){
+			shm_unlink(name.c_str());
+		}
 		pthread_mutex_destroy(&mutex);
 
 		delete(timer);
@@ -125,7 +128,7 @@ private:
 			exit(1);
 		}
 
-		// map airspace shm
+		// map period shm
 		periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
 		if (periodPtr == MAP_FAILED) {
 			perror("in map() PSR: period");
@@ -146,6 +149,75 @@ private:
 			exit(1);
 		}
 
+		// open comm shm
+		int shm_comm = shm_open("waiting_planes", O_RDONLY, 0666);
+		if (shm_comm == -1) {
+			perror("in compsys shm_open() comm");
+			exit(1);
+		}
+
+		// map comm shm
+		void * commPtr = mmap(0, SIZE_SHM_PSR, PROT_READ, MAP_SHARED, shm_comm, 0);
+		if (commPtr == MAP_FAILED) {
+			perror("in compsys map() comm");
+			exit(1);
+		}
+
+		// generate pointers to plane shms
+		std::string buffer = "";
+
+		for(int i = 0; i < SIZE_SHM_PSR; i++){
+			char readChar = *((char *)commPtr + i);
+
+			if(readChar == ','){
+				//				std::cout << "compsys initialize() found a planeFD: " << FD_buffer << "\n";
+
+				// open shm for current plane
+				int shm_plane = shm_open(buffer.c_str(), O_RDWR, 0666);
+				if(shm_plane == -1){
+					perror("in compsys shm_open() plane");
+
+					exit(1);
+				}
+
+				// map memory for current plane
+				void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+				if (ptr == MAP_FAILED) {
+					perror("in compsys map() plane");
+					exit(1);
+				}
+
+				commPtrs.push_back(ptr);
+				commNames.push_back(buffer);
+
+				buffer = "";
+				continue;
+			}
+			else if(readChar == ';'){
+				// open shm for current plane
+				int shm_plane = shm_open(buffer.c_str(), O_RDWR, 0666);
+				if(shm_plane == -1){
+					perror("in compsys shm_open() plane");
+
+					exit(1);
+				}
+
+				// map memory for current plane
+				void* ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+				if (ptr == MAP_FAILED) {
+					perror("in compsys map() plane");
+					exit(1);
+				}
+
+				commPtrs.push_back(ptr);
+				commNames.push_back(buffer);
+
+				break;
+			}
+
+			buffer += readChar;
+		}
+
 		return 0;
 	}
 
@@ -164,13 +236,14 @@ private:
 		int rcvid;
 		Message msg;
 
+		bool done = false;
 		while(1){
 			if(rcvid == 0){
 
 				pthread_mutex_lock(&mutex);
 
 				// read airspace shm
-				readAirspace();
+				done = readAirspace();
 
 				// send airspace info to display / prune airspace info
 				writeToDisplay();
@@ -190,7 +263,7 @@ private:
 			}
 
 			// termination check
-			if(numPlanes <= 0){
+			if(numPlanes <= 0 || done){
 				std::cout << "computer system done\n";
 				sprintf((char *)displayPtr, "terminated");
 				ChannelDestroy(chid);
@@ -206,7 +279,7 @@ private:
 	}
 
 	// ================= read airspace shm =================
-	void readAirspace(){
+	bool readAirspace(){
 		//		std::cout << "before read airspace\n";
 		std::string readBuffer = "";
 		int j = 0;
@@ -224,6 +297,9 @@ private:
 		// find planes in airspace
 		for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
 			char readChar = *((char *)airspacePtr + i);
+			if(readChar == 't'){
+				return true;
+			}
 			// end of airspace shm, line termination found
 			if(readChar == ';'){
 				// i=0 no planes found
@@ -305,8 +381,11 @@ private:
 											//													std::cout << "end of plane " << prediction->id << " prediction\n";
 											break;
 										}
-
 									}
+									// set termination character
+									prediction->posX.push_back(-1);
+									prediction->posY.push_back(-1);
+									prediction->posZ.push_back(-1);
 									// set prediction index to next, keep for computation
 									prediction->t = 1;
 									prediction->keep = true;
@@ -366,7 +445,10 @@ private:
 							break;
 						}
 					}
-
+					// set termination character
+					currentPrediction->posX.push_back(-1);
+					currentPrediction->posY.push_back(-1);
+					currentPrediction->posZ.push_back(-1);
 					// set prediction index to next, keep for first computation
 					currentPrediction->t = 1;
 					currentPrediction->keep = true;
@@ -455,7 +537,10 @@ private:
 											break;
 										}
 									}
-
+									// set termination character
+									prediction->posX.push_back(-1);
+									prediction->posY.push_back(-1);
+									prediction->posZ.push_back(-1);
 									// set prediction index to next, keep for computation
 									prediction->t = 1;
 									prediction->keep = true;
@@ -516,10 +601,11 @@ private:
 							//							std::cout << "reached end of plane " << currentPrediction->id << " predictions\n";
 							break;
 						}
-
-
 					}
-
+					// set termination character
+					currentPrediction->posX.push_back(-1);
+					currentPrediction->posY.push_back(-1);
+					currentPrediction->posZ.push_back(-1);
 					// set prediction index to next, keep for first computation
 					currentPrediction->t = 1;
 					currentPrediction->keep = true;
@@ -586,10 +672,13 @@ private:
 		//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
 		//					std::cout << "new values: posx "<< craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n";
 		//				}
+		return false;
 	}
 
 	// ================= send airspace info to display =================
 	void writeToDisplay(){
+		//		std::cout << "writing to display\n";
+
 		std::string displayBuffer = "";
 		std::string currentPlaneBuffer = "";
 		//		printf("airspace that was read: %s\n", ptr_airspace);
@@ -597,7 +686,7 @@ private:
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+			//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
@@ -609,16 +698,16 @@ private:
 			}
 			else{
 				// print plane info
-//				printf("plane %i:\n", (*it)->id);
-//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				//				printf("plane %i:\n", (*it)->id);
+				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
 				// id,posx,posy,posz,info
 				// ex: 1,15000,20000,5000,0
 				displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",";
-				displayBuffer += "1/";	// TODO: make this dynamic with input from console
+				displayBuffer += "0/";	// TODO: make this dynamic with input from console
 
 				(*it)->keep = false;	// if found next time, this will become true again
 
@@ -652,22 +741,26 @@ private:
 				// print plane prediction info
 
 				//				printf("plane %i predictions:\n", (*itpred)->id);
-				for(int i = (*itpred)->t-1; i < (*itpred)->t + (180 / (CS_PERIOD/1000000)); i++){
-					bool outOfBounds = false;
+				for(int i = (*itpred)->t-1; i < (*itpred)->t-1 + (180 / (CS_PERIOD/1000000)); i++){
+					//					bool outOfBounds = false;
 					int currX = (*itpred)->posX.at(i);
 					int currY = (*itpred)->posY.at(i);
 					int currZ = (*itpred)->posZ.at(i);
 
-					if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
-						outOfBounds = true;
-					}
-					if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
-						outOfBounds = true;
-					}
-					if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
-						outOfBounds = true;
-					}
-					if(outOfBounds){
+					//					if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN){
+					//						outOfBounds = true;
+					//					}
+					//					if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN){
+					//						outOfBounds = true;
+					//					}
+					//					if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN){
+					//						outOfBounds = true;
+					//					}
+					//					if(outOfBounds){
+					//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
+					//						break;
+					//					}
+					if(currX == -1 || currY == -1 || currZ == -1){
 						//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
 						break;
 					}
@@ -695,8 +788,8 @@ private:
 			while(itNext != trajectoryPredictions.end()){
 				// compare predictions, starting at current
 				int j = (*itNext)->t - 1;
-				for(int i = (*itIndex)->t-1; i < (*itIndex)->t + (180 / (CS_PERIOD/1000000)); i++){
-					bool outOfBounds = false;
+				for(int i = (*itIndex)->t-1; i < (*itIndex)->t-1 + (180 / (CS_PERIOD/1000000)); i++){
+					//					bool outOfBounds = false;
 					int currX = (*itIndex)->posX.at(i);
 					int currY = (*itIndex)->posY.at(i);
 					int currZ = (*itIndex)->posZ.at(i);
@@ -704,25 +797,92 @@ private:
 					int compY = (*itNext)->posY.at(j);
 					int compZ = (*itNext)->posZ.at(j);
 
-					if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN || compX >= SPACE_X_MAX || compX <= SPACE_X_MIN){
-						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in X\n";
-						outOfBounds = true;
+					//					if(currX >= SPACE_X_MAX || currX <= SPACE_X_MIN || compX >= SPACE_X_MAX || compX <= SPACE_X_MIN){
+					//						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in X\n";
+					//						outOfBounds = true;
+					//					}
+					//					if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN || compY >= SPACE_Y_MAX || compY <= SPACE_Y_MIN){
+					//						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Y\n";
+					//						outOfBounds = true;
+					//					}
+					//					if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN || compZ >= SPACE_Z_MAX || compZ <= SPACE_Z_MIN){
+					//						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Z\n";
+					//						outOfBounds = true;
+					//					}
+					//					if(outOfBounds){
+					//						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << "\n";
+					//						break;
+					//					}
+					if(currX == -1 || currY == -1 || currZ == -1){
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << "\n";
+						break;
 					}
-					if(currY >= SPACE_Y_MAX || currY <= SPACE_Y_MIN || compY >= SPACE_Y_MAX || compY <= SPACE_Y_MIN){
-						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Y\n";
-						outOfBounds = true;
-					}
-					if(currZ >= SPACE_Z_MAX || currZ <= SPACE_Z_MIN || compZ >= SPACE_Z_MAX || compZ <= SPACE_Z_MIN){
-						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << " in Z\n";
-						outOfBounds = true;
-					}
-					if(outOfBounds){
-						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << " or plane " << (*itNext)->id << "\n";
+					if(compX == -1 || compY == -1 || compZ == -1){
+						//						std::cout << "reached end of prediction for plane " << (*itNext)->id << "\n";
 						break;
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
 						//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
+						//TODO: get command from console
+
+						bool currComm = false;
+						bool compComm = false;
+						// find comm
+						for(void *comm : commPtrs){
+							// comm shm id
+							int commId = atoi((char *)comm);
+
+							if(commId == (*itIndex)->id){
+								//								std::cout << "found plane " << (*itIndex)->id << " comm, sending message\n";
+								// find command index in plane shm
+								int k = 0;
+								char readChar;
+								for(; k < SIZE_SHM_PLANES; k++){
+									readChar = *((char *)comm + k);
+									if(readChar == ';'){
+										break;
+									}
+								}
+								// set pointer after plane termination
+								k++;
+
+								// command string
+								std::string command = "x,500/y,500/z,100;";
+
+								// write command to plane
+								sprintf((char *)comm + k, "%s", command.c_str());
+
+								// current plane comm found
+								currComm = true;
+							}
+							if(commId == (*itNext)->id){
+								//								std::cout << "found plane " << (*itNext)->id << " comm, sending message\n";
+								// find command index in plane shm
+								int k = 0;
+								char readChar;
+								for(; k < SIZE_SHM_PLANES; k++){
+									readChar = *((char *)comm + k);
+									if(readChar == ';'){
+										break;
+									}
+								}
+								// set pointer after plane termination
+								k++;
+
+								// command string
+								std::string command = "x,500/y,500/z,100;";
+
+								// write command to plane
+								sprintf((char *)comm + k, "%s", command.c_str());
+
+								// compared plane comm found
+								compComm = true;
+							}
+							if(currComm && compComm){
+								break;
+							}
+						}
 						break;
 					}
 					//					std::cout << "incrementing j counter for prediction compare\n";
@@ -756,12 +916,12 @@ private:
 		}
 
 		if(currPeriod != newPeriod){
-			std::cout << "compsys period changed to: " << newPeriod << "\n";
+			//			std::cout << "compsys period changed to: " << newPeriod << "\n";
 			currPeriod = newPeriod;
 			std::string CSPeriod = std::to_string(currPeriod);
 			sprintf((char *)periodPtr, CSPeriod.c_str());
 			timer->setTimer(currPeriod, currPeriod);
-			printf("cs period shm after write: %s\n", periodPtr);
+			//			printf("cs period shm after write: %s\n", periodPtr);
 		}
 	}
 
@@ -801,6 +961,10 @@ private:
 	// display shm
 	int shm_display;
 	void *displayPtr;
+
+	// comm list (same as waiting list psr)
+	std::vector<void *> commPtrs;
+	std::vector<std::string> commNames;
 
 	friend class Plane;
 
