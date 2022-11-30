@@ -236,13 +236,14 @@ private:
 		int rcvid;
 		Message msg;
 
+		bool done = false;
 		while(1){
 			if(rcvid == 0){
 
 				pthread_mutex_lock(&mutex);
 
 				// read airspace shm
-				readAirspace();
+				done = readAirspace();
 
 				// send airspace info to display / prune airspace info
 				writeToDisplay();
@@ -262,7 +263,7 @@ private:
 			}
 
 			// termination check
-			if(numPlanes <= 0){
+			if(numPlanes <= 0 || done){
 				std::cout << "computer system done\n";
 				sprintf((char *)displayPtr, "terminated");
 				ChannelDestroy(chid);
@@ -278,7 +279,7 @@ private:
 	}
 
 	// ================= read airspace shm =================
-	void readAirspace(){
+	bool readAirspace(){
 		//		std::cout << "before read airspace\n";
 		std::string readBuffer = "";
 		int j = 0;
@@ -296,6 +297,9 @@ private:
 		// find planes in airspace
 		for(int i = 0; i < SIZE_SHM_AIRSPACE; i++){
 			char readChar = *((char *)airspacePtr + i);
+			if(readChar == 't'){
+				return true;
+			}
 			// end of airspace shm, line termination found
 			if(readChar == ';'){
 				// i=0 no planes found
@@ -668,6 +672,7 @@ private:
 		//					std::cout << "plane " << craft->id << ", keep: " << craft->keep << "\n";
 		//					std::cout << "new values: posx "<< craft->pos[0] << ", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n";
 		//				}
+		return false;
 	}
 
 	// ================= send airspace info to display =================
@@ -693,16 +698,16 @@ private:
 			}
 			else{
 				// print plane info
-				printf("plane %i:\n", (*it)->id);
-				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				//				printf("plane %i:\n", (*it)->id);
+				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
 				// id,posx,posy,posz,info
 				// ex: 1,15000,20000,5000,0
 				displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",";
-				displayBuffer += "1/";	// TODO: make this dynamic with input from console
+				displayBuffer += "0/";	// TODO: make this dynamic with input from console
 
 				(*it)->keep = false;	// if found next time, this will become true again
 
@@ -775,7 +780,7 @@ private:
 
 	// ================= compute airspace violations =================
 	void computeViolations(){
-		std::cout << "computing airspace violations\n";
+		//		std::cout << "computing airspace violations\n";
 		auto itIndex = trajectoryPredictions.begin();
 		while(itIndex != trajectoryPredictions.end()){
 			auto itNext = itIndex;
@@ -809,16 +814,16 @@ private:
 					//						break;
 					//					}
 					if(currX == -1 || currY == -1 || currZ == -1){
-//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << "\n";
+						//						std::cout << "reached end of prediction for plane " << (*itIndex)->id << "\n";
 						break;
 					}
 					if(compX == -1 || compY == -1 || compZ == -1){
-//						std::cout << "reached end of prediction for plane " << (*itNext)->id << "\n";
+						//						std::cout << "reached end of prediction for plane " << (*itNext)->id << "\n";
 						break;
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
-						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
+						//						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
 						//TODO: get command from console
 
 						bool currComm = false;
@@ -829,7 +834,7 @@ private:
 							int commId = atoi((char *)comm);
 
 							if(commId == (*itIndex)->id){
-								std::cout << "found plane " << (*itIndex)->id << " comm, sending message\n";
+								//								std::cout << "found plane " << (*itIndex)->id << " comm, sending message\n";
 								// find command index in plane shm
 								int k = 0;
 								char readChar;
@@ -852,7 +857,7 @@ private:
 								currComm = true;
 							}
 							if(commId == (*itNext)->id){
-								std::cout << "found plane " << (*itNext)->id << " comm, sending message\n";
+								//								std::cout << "found plane " << (*itNext)->id << " comm, sending message\n";
 								// find command index in plane shm
 								int k = 0;
 								char readChar;

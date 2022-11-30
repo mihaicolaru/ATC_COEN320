@@ -189,15 +189,15 @@ public:
 		for(int j=0; j<block_count;j++){
 			for(int k=0; k<block_count;k++){
 				if(map[j][k] == ""){
-					//					printf("_|");
+					printf("_|");
 				}
 				else{
-					//					printf("%s|", map[j][k]);
+					printf("%s|", map[j][k]);
 				}
 			}
-			//			std::cout << std::endl;
+			std::cout << std::endl;
 		}
-		//		printf("%s", height_display.c_str());
+		printf("%s\n", height_display.c_str());
 	}
 
 private:
