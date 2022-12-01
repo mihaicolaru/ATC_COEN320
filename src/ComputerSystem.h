@@ -27,6 +27,7 @@
 
 class Plane; // forward declaration
 
+// prediction container
 struct trajectoryPrediction {
   int id;
 
