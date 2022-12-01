@@ -8,49 +8,49 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <pthread.h>
-#include <iostream>
 #include <errno.h>
 #include <fcntl.h>
+#include <iostream>
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <time.h>
 
 #include "Limits.h"
 #include "Timer.h"
 
-const int block_count = (int)MARGIN/(int)SCALER + 1;
+const int block_count = (int)MARGIN / (int)SCALER + 1;
 
-class Display{
+class Display {
 public:
-	Display();
-	~Display();
-	int initialize();
-	void start();
-	int stop();
-	static void *startDisplay(void *context);
-	void *updateDisplay(void);
-	void printMap();
+  Display();
+  ~Display();
+  int initialize();
+  void start();
+  int stop();
+  static void *startDisplay(void *context);
+  void *updateDisplay(void);
+  void printMap();
 
 private:
-	//time reader
-	time_t at;
-	time_t et;
+  // time reader
+  time_t at;
+  time_t et;
 
-	//threads
-	pthread_t displayThread;
-	pthread_attr_t attr;
-	pthread_mutex_t mutex;// mutex for display
+  // threads
+  pthread_t displayThread;
+  pthread_attr_t attr;
+  pthread_mutex_t mutex; // mutex for display
 
-	//Temporary values
-	std::string map[block_count][block_count]={{""}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
-	std::string height_display="";
+  // Temporary values
+  std::string map[block_count][block_count] = {
+      {""}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k
+  std::string height_display = "";
 
-	// shm members
-	int shm_display;//Display required info
-	void *ptr_display;
+  // shm members
+  int shm_display; // Display required info
+  void *ptr_display;
 };
 
 #endif /* DISPLAY_H_ */

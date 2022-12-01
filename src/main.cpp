@@ -6,15 +6,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "ATC.h"
 #include "ComputerSystem.h"
 #include "Limits.h"
-#include "ATC.h"
-
 
 int main() {
 
-	ATC atc;
+  ATC atc;
 
-	return 0;
-
+  return 0;
 }
