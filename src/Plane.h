@@ -39,6 +39,9 @@ public:
 			speed[i] = _speed[i];
 		}
 
+		commandCounter = 0;
+		commandInProgress = false;
+
 		// initialize thread members
 		initialize();
 	}
@@ -51,7 +54,7 @@ public:
 
 	// call static function to start thread
 	int start(){
-//		std::cout << getFD() << " start called\n";
+		//		std::cout << getFD() << " start called\n";
 		if(pthread_create(&planeThread, &attr, &Plane::startPlane, (void *) this) != EOK){
 			planeThread = NULL;
 		}
@@ -61,7 +64,7 @@ public:
 
 	// join execution thread
 	bool stop(){
-//		std::cout << getFD() << " stop called\n";
+		//		std::cout << getFD() << " stop called\n";
 		pthread_join(planeThread, NULL);
 		return 0;
 	}
@@ -126,7 +129,7 @@ private:
 
 		// initial write + space for comm system
 		sprintf((char* )ptr, "%s0;", planeString.c_str());
-//		printf("%s\n", ptr);
+		//		printf("%s\n", ptr);
 
 		return 0;
 	}
@@ -151,7 +154,7 @@ private:
 		while(1) {
 			if(start){
 				// first cycle, wait for arrival time
-//				std::cout << getFD() << " first iteration\n";
+				//				std::cout << getFD() << " first iteration\n";
 				start = false;
 			}
 			else{
@@ -166,6 +169,7 @@ private:
 
 					// check for airspace limits, write to shm
 					if(checkLimits() == 0){
+						std::cout << getFD() << " terminated\n";
 						ChannelDestroy(chid);
 						return 0;
 					}
@@ -184,11 +188,24 @@ private:
 
 	// check comm system for potential commands
 	void answerComm(){
+		// check if executing command
+		if(commandInProgress){
+			// decrement counter
+//			std::cout << "command execution incomplete\n";
+			commandCounter--;
+			if(commandCounter <= 0){
+				commandInProgress = false;
+//				speed[2] = 0;
+			}
+			return;
+		}
+		speed[2] = 0;
+
 //		printf("answerComm() read: %s\n", ptr);
-		char readChar;
 
 		// find end of plane info
 		int i = 0;
+		char readChar;
 		for(; i < SIZE_SHM_PLANES; i++){
 			readChar = *((char *)ptr + i);
 			if(readChar == ';'){
@@ -212,7 +229,7 @@ private:
 			buffer += readChar;
 			readChar = *((char *)ptr + ++i);
 		}
-//		readChar = *((char *)ptr + ++i);
+		//		readChar = *((char *)ptr + ++i);
 		buffer += ';';
 //		std::cout << getFD() << " read command: " << buffer << "\n";
 
@@ -257,6 +274,12 @@ private:
 			}
 		}
 
+		for(int k = 0; k < 500; k += abs(speed[2])){
+			commandCounter++;
+		}
+
+		commandInProgress = true;
+
 		// remove command
 		sprintf((char*)ptr + startIndex, "0;");
 //		printf("after remove command: %s\n", ptr);
@@ -264,13 +287,13 @@ private:
 
 	// update position based on speed
 	void updatePosition(){
-//		std::cout << getFD() << " updating position\n";
+		//		std::cout << getFD() << " updating position\n";
 		for(int i = 0; i < 3; i++){
 			position[i] = position[i] + speed[i];
 		}
 		// save modifications to string
 		updateString();
-//		Print();
+		//		Print();
 	}
 
 	// stringify plane data members
@@ -315,6 +338,10 @@ private:
 	int ID;
 	int position [3];
 	int speed [3];
+
+	// command members
+	int commandCounter;
+	bool commandInProgress;
 
 	// thread members
 	pthread_t planeThread;

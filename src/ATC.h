@@ -285,7 +285,6 @@ protected:
 	// secondary radar
 	SSR *ssr;
 
-
 	// display
 	Display *display;
 

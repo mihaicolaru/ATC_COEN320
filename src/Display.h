@@ -110,6 +110,7 @@ public:
 		int i = 1;
 		while(1){
 			if(rcvid==0){
+				pthread_mutex_lock(&mutex);
 				//				printf("Display read: %s\n", ptr_display);
 				int axis=0;//0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
 				std::string buffer = "";
@@ -174,6 +175,7 @@ public:
 					}
 					//					printf("%c", readChar);
 				}
+				pthread_mutex_unlock(&mutex);
 				printMap();
 				height_display = "";
 				memset(map,0, sizeof(map[0][0]) * block_count * block_count);//Reset map to 0 for next set
@@ -212,7 +214,7 @@ private:
 	//threads
 	pthread_t displayThread;
 	pthread_attr_t attr;
-	pthread_mutex_t mutex_d;// mutex for display
+	pthread_mutex_t mutex;// mutex for display
 
 	//Temporary values
 	std::string map[block_count][block_count]={{""}}; // Shrink 100k by 100k map to 10 by 10, each block is 10k by 10k

@@ -46,6 +46,7 @@
 // Computer system specifications
 #define CS_PERIOD 2000000
 #define SIZE_SHM_PERIOD 4096
+#define NUM_PRINT 3
 
 // Plane Specifications
 #define OFFSET 1000000
