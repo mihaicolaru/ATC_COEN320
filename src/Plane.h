@@ -169,7 +169,7 @@ private:
 
 					// check for airspace limits, write to shm
 					if(checkLimits() == 0){
-						std::cout << getFD << " terminated\n";
+						std::cout << getFD() << " terminated\n";
 						ChannelDestroy(chid);
 						return 0;
 					}

@@ -45,6 +45,8 @@ struct aircraft{
 	int pos[3];
 	int vel[3];
 	bool keep;	// keep for next iteration
+	bool moreInfo;
+	int commandCounter;
 };
 
 class ComputerSystem{
@@ -346,7 +348,7 @@ private:
 
 								// check posx, posy and poz if same
 								if(prediction->posX.at(prediction->t) == craft->pos[0] && prediction->posY.at(prediction->t) == craft->pos[1] && prediction->posZ.at(prediction->t) == craft->pos[2]){
-//									std::cout << "predictions match\n";
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									// update last entry in predictions
 									auto it = prediction->posX.end();
@@ -395,7 +397,7 @@ private:
 								}
 								// update the prediction
 								else{
-//									std::cout << "predictions do not match, recomputing predictions\n";
+									//									std::cout << "predictions do not match, recomputing predictions\n";
 									prediction->posX.clear();
 									prediction->posY.clear();
 									prediction->posZ.clear();
@@ -542,7 +544,7 @@ private:
 
 								// check posx, posy and poz if same
 								if(prediction->posX.at(prediction->t) == craft->pos[0] && prediction->posY.at(prediction->t) == craft->pos[1] && prediction->posZ.at(prediction->t) == craft->pos[2]){
-//									std::cout << "predictions match\n";
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									// update last entry in predictions
 									auto it = prediction->posX.end();
@@ -591,7 +593,7 @@ private:
 								}
 								// update the prediction
 								else{
-//									std::cout << "predictions do not match, recomputing predictions\n";
+									//									std::cout << "predictions do not match, recomputing predictions\n";
 									prediction->posX.clear();
 									prediction->posY.clear();
 									prediction->posZ.clear();
@@ -760,34 +762,34 @@ private:
 
 	// ================= prune predictions =================
 	void cleanPredictions(){
-//		std::cout << "printing predictions\n";
+		//		std::cout << "printing predictions\n";
 		int j = 0;
 		auto itpred = trajectoryPredictions.begin();
 		while(itpred != trajectoryPredictions.end()){
-//			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
+			//			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
 			bool temp = (*itpred)->keep;
 
 			// check if plane was terminated
 			if(!temp){
-//				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
+				//				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
 				delete trajectoryPredictions.at(j);
 				itpred = trajectoryPredictions.erase(itpred);
 			}
 			else{
 				// print plane prediction info
 
-//				printf("plane %i predictions:\n", (*itpred)->id);
+				//				printf("plane %i predictions:\n", (*itpred)->id);
 				for(int i = (*itpred)->t-1; i < (*itpred)->t + (180 / (currPeriod/1000000)); i++){
 					int currX = (*itpred)->posX.at(i);
 					int currY = (*itpred)->posY.at(i);
 					int currZ = (*itpred)->posZ.at(i);
 
 					if(currX == -1 || currY == -1 || currZ == -1){
-//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
+						//						std::cout << "reached end of prediction for plane " << (*itpred)->id << "\n";
 						break;
 					}
 
-//					printf("posx: %i, posy: %i, posz: %i\n", currX, currY, currZ);
+					//					printf("posx: %i, posy: %i, posz: %i\n", currX, currY, currZ);
 				}
 
 
@@ -828,9 +830,7 @@ private:
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
-						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
-						//TODO: get command from console
-
+						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << " at time current + " << i * (currPeriod)/1000000 << "\n";
 						bool currComm = false;
 						bool compComm = false;
 						// find comm
@@ -852,7 +852,7 @@ private:
 								// set pointer after plane termination
 								k++;
 
-								// command string
+								// command string (send one of the planes upwards)
 								std::string command = "z,200;";
 
 								// write command to plane
@@ -875,13 +875,31 @@ private:
 								// set pointer after plane termination
 								k++;
 
-								// command string
+								// command string (send one of the planes downwards)
 								std::string command = "z,-200;";
 
 								// write command to plane
 								sprintf((char *)comm + k, "%s", command.c_str());
 
 								// compared plane comm found
+								compComm = true;
+							}
+							if(currComm && compComm){
+								break;
+							}
+						}
+						// set associate craft info request to true, display height
+						currComm = false;
+						compComm = false;
+						for(aircraft *craft : flyingPlanesInfo){
+							if(craft->id == (*itIndex)->id){
+								craft->moreInfo = true;
+								craft->commandCounter = NUM_PRINT;
+								currComm = true;
+							}
+							if(craft->id == (*itNext)->id){
+								craft->moreInfo = true;
+								craft->commandCounter = NUM_PRINT;
 								compComm = true;
 							}
 							if(currComm && compComm){
@@ -907,12 +925,12 @@ private:
 
 		std::string displayBuffer = "";
 		std::string currentPlaneBuffer = "";
-//		printf("airspace that was read: %s\n", airspacePtr);
+		//		printf("airspace that was read: %s\n", airspacePtr);
 		// print what was found, remove what is no longer in the airspace
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
 		while(it != flyingPlanesInfo.end()){
-//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
+			//			std::cout << "plane " << (*it)->id << " keep: " << (*it)->keep << "\n";
 			bool temp = (*it)->keep;	// check if plane was terminated
 
 			if(!temp){
@@ -924,16 +942,27 @@ private:
 			}
 			else{
 				// print plane info
-//				printf("plane %i:\n", (*it)->id);
-//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
+				//				printf("plane %i:\n", (*it)->id);
+				//				printf("posx: %i, posy: %i, posz: %i\n", (*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
+				//				printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0], (*it)->vel[1], (*it)->vel[2]);
 
 				// add plane to buffer for display
 
 				// id,posx,posy,posz,info
 				// ex: 1,15000,20000,5000,0
 				displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",";
-				displayBuffer += "1/";	// TODO: make this dynamic with input from console
+
+				// check if more info requested
+				if((*it)->moreInfo){
+					(*it)->commandCounter--;
+					if((*it)->commandCounter <= 0){
+						(*it)->moreInfo = false;
+					}
+					displayBuffer += "1/";
+				}
+				else{
+					displayBuffer += "0/";
+				}
 
 				(*it)->keep = false;	// if found next time, this will become true again
 
