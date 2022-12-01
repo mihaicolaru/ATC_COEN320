@@ -60,6 +60,10 @@ private:
   std::vector<std::string> fileNames;
   std::vector<void *> planePtrs;
 
+  // list of waiting planes
+  std::vector<std::string> waitingFileNames;
+  std::vector<void *> waitingPtrs;
+
   // flying planes list
   int shm_flyingPlanes;
   void *flyingPlanesPtr;
@@ -73,11 +77,9 @@ private:
   int shm_period;
   void *periodPtr;
 
-  friend class Plane;
-  friend class PSR;
-
   // number of planes left
   int numPlanes;
+
 };
 
 #endif /* SSR_H_ */

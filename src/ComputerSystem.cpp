@@ -81,8 +81,7 @@ int ComputerSystem::initialize() {
   }
 
   // map period shm
-  periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED,
-                   shm_period, 0);
+  periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
   if (periodPtr == MAP_FAILED) {
     perror("in map() PSR: period");
     exit(1);

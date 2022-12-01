@@ -148,9 +148,7 @@ void *Display::updateDisplay(void) {
       printMap();          // Display map and height command
       height_display = ""; // Reset buffer
       // Reset map array
-      memset(map, 0,
-             sizeof(map[0][0]) * block_count *
-                 block_count); // Reset map to 0 for next set
+      memset(map, 0, sizeof(map[0][0]) * block_count * block_count); // Reset map to 0 for next set
     }
     rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
   }

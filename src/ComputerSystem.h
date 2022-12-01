@@ -128,7 +128,6 @@ private:
   std::vector<void *> commPtrs;
   std::vector<std::string> commNames;
 
-  friend class Plane;
 };
 
 #endif /* COMPUTERSYSTEM_H_ */

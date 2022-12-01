@@ -82,6 +82,7 @@ protected:
   void *displayPtr;
 
   pthread_mutex_t mutex;
+
 };
 
 #endif /* ATC_H_ */

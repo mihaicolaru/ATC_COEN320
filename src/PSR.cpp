@@ -20,6 +20,9 @@ PSR::~PSR() {
   shm_unlink("waiting_planes");
   shm_unlink("flying_planes");
   shm_unlink("period");
+  for(std::string name : flyingFileNames){
+	  shm_unlink(name.c_str());
+  }
   pthread_mutex_destroy(&mutex);
   delete timer;
 }
@@ -248,6 +251,8 @@ bool PSR::readWaitingPlanes() {
 
       // add current fd to airspace fd vector
       flyingFileNames.push_back(waitingFileNames.at(i));
+
+//      shm_unlink(waitingFileNames.at(i).c_str());
 
       // remove current fd from waiting planes fd vector
       waitingFileNames.erase(waitingFileNames.begin() + i);
