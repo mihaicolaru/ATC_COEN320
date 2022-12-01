@@ -10,6 +10,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -51,7 +52,6 @@ private:
   // shm members
   int shm_display; // Display required info
   void *ptr_display;
-
 };
 
 #endif /* DISPLAY_H_ */
