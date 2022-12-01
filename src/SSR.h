@@ -406,7 +406,6 @@ private:
 	// current period
 	int currPeriod;
 
-
 	// thread members
 	pthread_t SSRthread;
 	pthread_attr_t attr;
@@ -433,8 +432,8 @@ private:
 	int shm_period;
 	void *periodPtr;
 
-	friend class Plane;
-	friend class PSR;
+//	friend class Plane;
+//	friend class PSR;
 
 	// number of planes left
 	int numPlanes;

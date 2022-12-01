@@ -27,6 +27,7 @@
 
 class Plane;		// forward declaration
 
+// prediction container
 struct trajectoryPrediction {
 	int id;
 
@@ -34,11 +35,12 @@ struct trajectoryPrediction {
 	std::vector<int> posY;
 	std::vector<int> posZ;
 
-	int t;
+	int t;	// time index
 
 	bool keep;	// keep for next iteration
 };
 
+// plane info container
 struct aircraft{
 	int id;
 	int t_arrival;
