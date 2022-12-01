@@ -94,7 +94,7 @@ public:
 
 private:
 
-	// ================= private member functions =================
+	// ================= initialize thread and shm members =================
 	int initialize(){
 		// initialize thread members
 
@@ -108,7 +108,6 @@ private:
 		if (rc){
 			printf("ERROR; RC from pthread_attr_setdetachstate() is %d \n", rc);
 		}
-
 
 		// shared memory members
 
@@ -225,7 +224,7 @@ private:
 		return 0;
 	}
 
-	// execution function
+	// ================= execution function =================
 	void *calculateTrajectories(void){
 		// create channel to communicate with timer
 		int chid = ChannelCreate(0);
