@@ -27,12 +27,11 @@
 #define SPACE_ELEVATION 15000
 
 // PSR Specifications
-#define SIZE_SHM_PLANES 4096
 #define SIZE_SHM_PSR 4096
 #define PSR_PERIOD 2000000
 
 // SSR Specifications
-#define SIZE_SHM_AIRSPACE 4096
+#define SIZE_SHM_AIRSPACE 8192
 #define SIZE_SHM_SSR 4096
 #define SIZE_SHM_PSR 4096
 #define SSR_PERIOD 2000000
@@ -41,11 +40,11 @@
 #define SCALER 3000
 #define MARGIN 100000
 #define PERIOD_D 5000000 // 5sec period
-#define SIZE_SHM_DISPLAY 4096
+#define SIZE_SHM_DISPLAY 8192
 
 // Computer System specifications
 #define CS_PERIOD 2000000
-#define SIZE_SHM_PERIOD 4096
+#define SIZE_SHM_PERIOD 64
 #define NUM_PRINT 3
 
 // Plane Specifications
@@ -58,7 +57,7 @@
 #define SPACE_Z_MIN 0
 #define SPACE_Z_MAX 25000
 #define SPACE_ELEVATION 15000
-#define SIZE_SHM_PLANES 4096
+#define SIZE_SHM_PLANES 128
 
 // Timer Specifications
 #define ONE_THOUSAND 1000
