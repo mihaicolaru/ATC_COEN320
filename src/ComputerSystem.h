@@ -45,6 +45,8 @@ struct aircraft{
 	int pos[3];
 	int vel[3];
 	bool keep;	// keep for next iteration
+	bool moreInfo;
+	int commandCounter;
 };
 
 class ComputerSystem{
@@ -340,13 +342,13 @@ private:
 
 								// if end of prediction reached, break
 								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
-//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
 									break;
 								}
 
 								// check posx, posy and poz if same
-								if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
-//									std::cout << "predictions match\n";
+								if(prediction->posX.at(prediction->t) == craft->pos[0] && prediction->posY.at(prediction->t) == craft->pos[1] && prediction->posZ.at(prediction->t) == craft->pos[2]){
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									// update last entry in predictions
 									auto it = prediction->posX.end();
@@ -372,7 +374,7 @@ private:
 									}
 									// if not, just increment
 									if(outOfBounds){
-//										std::cout << "plane " << prediction->id << " prediction already reaches end of airspace\n";
+										//										std::cout << "plane " << prediction->id << " prediction already reaches end of airspace\n";
 										prediction->keep = true;
 										prediction->t++;
 										break;
@@ -444,7 +446,7 @@ private:
 
 				// if plane was not already in the list, add it
 				if(!inList){
-//					std::cout << "compsys found new plane " << id << "\n";
+					//					std::cout << "compsys found new plane " << id << "\n";
 					// new pointer to struct, set members from read
 					aircraft *currentAircraft = new aircraft();
 					currentAircraft->id = id;
@@ -458,7 +460,7 @@ private:
 					currentAircraft->keep = true;	// keep for first computation
 					flyingPlanesInfo.push_back(currentAircraft);	// add to struct pointer vector
 
-//					std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
+					//					std::cout << "computing new predictions for plane " << currentAircraft->id << "\n";
 					trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
 					currentPrediction->id = currentAircraft->id;
@@ -536,13 +538,13 @@ private:
 
 								// if end of prediction reached, break
 								if(prediction->t >= prediction->posX.size() || prediction->t >= prediction->posY.size() || prediction->t >= prediction->posZ.size()){
-//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
+									//									std::cout << "plane " << prediction->id << ": prediction already at end of scope\n";
 									break;
 								}
 
 								// check posx, posy and poz if same
-								if(prediction->posX.at(prediction->t) == craft->pos[0] || prediction->posY.at(prediction->t) == craft->pos[1] || prediction->posZ.at(prediction->t) == craft->pos[2]){
-//									std::cout << "predictions match\n";
+								if(prediction->posX.at(prediction->t) == craft->pos[0] && prediction->posY.at(prediction->t) == craft->pos[1] && prediction->posZ.at(prediction->t) == craft->pos[2]){
+									//									std::cout << "predictions match\n";
 									// set prediction index to next
 									// update last entry in predictions
 									auto it = prediction->posX.end();
@@ -568,7 +570,7 @@ private:
 									}
 									// if not, just increment
 									if(outOfBounds){
-//										std::cout << "plane " << prediction->id << " prediction already reaches end of airspace\n";
+										//										std::cout << "plane " << prediction->id << " prediction already reaches end of airspace\n";
 										prediction->keep = true;
 										prediction->t++;
 										break;
@@ -760,16 +762,16 @@ private:
 
 	// ================= prune predictions =================
 	void cleanPredictions(){
-		std::cout << "printing predictions\n";
+		//		std::cout << "printing predictions\n";
 		int j = 0;
 		auto itpred = trajectoryPredictions.begin();
 		while(itpred != trajectoryPredictions.end()){
-			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
+			//			std::cout << "plane " << (*itpred)->id << " prediction keep: " << (*itpred)->keep << "\n";
 			bool temp = (*itpred)->keep;
 
 			// check if plane was terminated
 			if(!temp){
-				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
+				//				std::cout << "compsys found plane " << (*itpred)->id << " prediction terminated\n";
 				delete trajectoryPredictions.at(j);
 				itpred = trajectoryPredictions.erase(itpred);
 			}
@@ -828,9 +830,7 @@ private:
 					}
 
 					if((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) && abs(currZ - compZ) <= 1000){
-						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << "\n";
-						//TODO: get command from console
-
+						std::cout << "airspace violation detected between planes " << (*itIndex)->id << " and " << (*itNext)->id << " at time current + " << i * (currPeriod)/1000000 << "\n";
 						bool currComm = false;
 						bool compComm = false;
 						// find comm
@@ -852,7 +852,7 @@ private:
 								// set pointer after plane termination
 								k++;
 
-								// command string
+								// command string (send one of the planes upwards)
 								std::string command = "z,200;";
 
 								// write command to plane
@@ -875,13 +875,31 @@ private:
 								// set pointer after plane termination
 								k++;
 
-								// command string
+								// command string (send one of the planes downwards)
 								std::string command = "z,-200;";
 
 								// write command to plane
 								sprintf((char *)comm + k, "%s", command.c_str());
 
 								// compared plane comm found
+								compComm = true;
+							}
+							if(currComm && compComm){
+								break;
+							}
+						}
+						// set associate craft info request to true, display height
+						currComm = false;
+						compComm = false;
+						for(aircraft *craft : flyingPlanesInfo){
+							if(craft->id == (*itIndex)->id){
+								craft->moreInfo = true;
+								craft->commandCounter = NUM_PRINT;
+								currComm = true;
+							}
+							if(craft->id == (*itNext)->id){
+								craft->moreInfo = true;
+								craft->commandCounter = NUM_PRINT;
 								compComm = true;
 							}
 							if(currComm && compComm){
@@ -907,7 +925,7 @@ private:
 
 		std::string displayBuffer = "";
 		std::string currentPlaneBuffer = "";
-		//		printf("airspace that was read: %s\n", ptr_airspace);
+		//		printf("airspace that was read: %s\n", airspacePtr);
 		// print what was found, remove what is no longer in the airspace
 		int i = 0;
 		auto it = flyingPlanesInfo.begin();
@@ -933,7 +951,18 @@ private:
 				// id,posx,posy,posz,info
 				// ex: 1,15000,20000,5000,0
 				displayBuffer = displayBuffer + std::to_string((*it)->id) +","+ std::to_string((*it)->pos[0]) + "," + std::to_string((*it)->pos[1])+ ","+ std::to_string((*it)->pos[2])+ ",";
-				displayBuffer += "0/";	// TODO: make this dynamic with input from console
+
+				// check if more info requested
+				if((*it)->moreInfo){
+					(*it)->commandCounter--;
+					if((*it)->commandCounter <= 0){
+						(*it)->moreInfo = false;
+					}
+					displayBuffer += "1/";
+				}
+				else{
+					displayBuffer += "0/";
+				}
 
 				(*it)->keep = false;	// if found next time, this will become true again
 
