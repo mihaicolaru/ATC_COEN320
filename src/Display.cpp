@@ -6,6 +6,7 @@
  */
 
 #include "Display.h"
+#include <iostream>
 
 Display::Display() {
   initialize(); // Construction Initialization Call
@@ -75,6 +76,9 @@ void *Display::updateDisplay(void) {
   // Receive data
   int rcvid;
   Message msg;
+  int logging_counter = 1;
+  std::ofstream out("log");
+
   while (1) {
     if (rcvid == 0) {
       pthread_mutex_lock(&mutex);
@@ -145,10 +149,35 @@ void *Display::updateDisplay(void) {
         }
       }
       pthread_mutex_unlock(&mutex);
-      printMap();          // Display map and height command
+
+      // Logging the airspace into a log file
+      // Since every period is 5 seconds, we want to wait 6 periods to do this
+      if (logging_counter == 6) {
+        std::cout << "Logging current airspace..." << std::endl;
+        std::streambuf *coutbuf = std::cout.rdbuf(); // save old buf
+        std::cout.rdbuf(out.rdbuf()); // redirect std::cout to out.txt!
+
+        // this used to print to stdout but now we redirected it to out.txt
+        printMap(); // Display map and height command
+        std::cout << std::endl;
+
+        std::cout.rdbuf(coutbuf); // reset to standard output again
+        logging_counter = 1;
+      }
+
+      // if not during a multiple of 30 second period, just print to stdout
+      // normally
+      else {
+        printMap(); // Display map and height command
+      }
+
+      logging_counter++;
+
       height_display = ""; // Reset buffer
       // Reset map array
-      memset(map, 0, sizeof(map[0][0]) * block_count * block_count); // Reset map to 0 for next set
+      memset(map, 0,
+             sizeof(map[0][0]) * block_count *
+                 block_count); // Reset map to 0 for next set
     }
     rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
   }
@@ -161,10 +190,10 @@ void Display::printMap() {
     for (int k = 0; k < block_count; k++) {
       // Print Empty block if no item
       if (map[j][k] == "") {
-        printf("_|");
+        std::cout << "_|";
       } else {
         // print plane ID if there are items
-        printf("%s|", map[j][k]);
+        std::cout << map[j][k] << "|";
       }
     }
     std::cout << std::endl;

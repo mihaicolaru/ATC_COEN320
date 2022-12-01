@@ -10,6 +10,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -20,6 +21,7 @@
 #include "Limits.h"
 #include "Timer.h"
 
+// blockcount is the height and width of the display
 const int block_count = (int)MARGIN / (int)SCALER + 1;
 
 class Display {
@@ -51,7 +53,6 @@ private:
   // shm members
   int shm_display; // Display required info
   void *ptr_display;
-
 };
 
 #endif /* DISPLAY_H_ */
