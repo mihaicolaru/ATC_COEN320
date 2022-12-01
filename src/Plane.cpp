@@ -28,7 +28,7 @@ int Plane::start() {
   //		std::cout << getFD() << " start called\n";
   if (pthread_create(&planeThread, &attr, &Plane::startPlane, (void *)this) !=
       EOK) {
-    planeThread = NULL;
+    planeThread = 0;
   }
 
   return 0;
@@ -196,7 +196,7 @@ void Plane::answerComm() {
   // parse command
   std::string parseBuf = "";
   int currParam;
-  for (int j = 0; j <= buffer.size(); j++) {
+  for (int j = 0; j <= (int)buffer.size(); j++) {
     char currChar = buffer[j];
 
     switch (currChar) {

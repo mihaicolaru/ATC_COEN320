@@ -234,8 +234,8 @@ bool PSR::readWaitingPlanes() {
 
     // extract arrival time
     int curr_arrival_time = atoi((char *)(*it) + j + 1);
-    //						std::cout << "current plane arrival
-    //time:
+    //						std::cout << "current plane
+    //arrival time:
     //"
     //<< curr_arrival_time << "\n";
 

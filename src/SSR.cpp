@@ -212,8 +212,8 @@ bool SSR::readFlyingPlanes() {
 
       for (std::string filename : flyingFileNames) {
         if (filename == FD_buffer) {
-          //								std::cout << FD_buffer << " already
-          //in list\n";
+          //								std::cout << FD_buffer << "
+          //already in list\n";
           inFile = true;
         }
       }
@@ -287,7 +287,7 @@ bool SSR::getPlaneInfo() {
     else {
       int j = 0;
       //						std::cout << "reading
-      //current plane data\n";
+      // current plane data\n";
       for (; j < SIZE_SHM_PLANES; j++) {
         char readChar = *((char *)*it + j);
 
