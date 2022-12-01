@@ -85,7 +85,6 @@ private:
   int shm_period;
   void *periodPtr;
 
-  friend class Plane;
 };
 
 #endif /* PSR_H_ */

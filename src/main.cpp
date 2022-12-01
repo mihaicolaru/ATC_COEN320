@@ -5,6 +5,8 @@
 #include <sys/neutrino.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/resource.h>
+
 
 #include "ATC.h"
 #include "ComputerSystem.h"

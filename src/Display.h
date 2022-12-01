@@ -51,6 +51,7 @@ private:
   // shm members
   int shm_display; // Display required info
   void *ptr_display;
+
 };
 
 #endif /* DISPLAY_H_ */
