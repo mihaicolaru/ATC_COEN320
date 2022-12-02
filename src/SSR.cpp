@@ -7,31 +7,17 @@
 
 #include "SSR.h"
 #include <sys/resource.h>
+#include <sys/types.h>
 
 SSR::SSR(int numberOfPlanes) {
+	// set new limit of max open files to 10000 to allow for more than 200 planes
 	struct rlimit curr_limits, new_limits;
-	getrlimit(RLIMIT_AS, &curr_limits);
-	printf("soft limit files: %d\nhard limit files: %d\n", (int) curr_limits.rlim_cur, (int) curr_limits.rlim_max );
-
-	new_limits.rlim_cur = 1000;
-	new_limits.rlim_max = 1000;
-	setrlimit(RLIMIT_AS, &new_limits);
-
-	struct rlimit curr_data, new_data;
-	getrlimit(RLIMIT_DATA, &curr_data);
-	printf("soft limit data: %d\nhard limit data: %d\n", (int) curr_data.rlim_cur, (int) curr_data.rlim_max );
-
-	new_limits.rlim_cur = 1000;
-	new_limits.rlim_max = 1000;
-	setrlimit(RLIMIT_DATA, &new_data);
-
-	struct rlimit curr_mem, new_mem;
-	getrlimit(RLIMIT_MEMLOCK, &curr_mem);
-	printf("soft limit memory: %d\nhard limit memory: %d\n", (int) curr_mem.rlim_cur, (int) curr_mem.rlim_max );
-
-	new_mem.rlim_cur = 1000;
-	new_mem.rlim_max = 1000;
-	setrlimit(RLIMIT_MEMLOCK, &new_mem);
+	pid_t curr_id = getpid();
+	int pid = (int) curr_id;
+	new_limits.rlim_cur = 10000;
+	new_limits.rlim_max = 10000;
+	prlimit(pid, RLIMIT_NOFILE, &new_limits, &curr_limits);
+	printf("old soft limit files: %d\nold hard limit files: %d\nnew soft limit files: %d\nnew hard limit files: %d\n", (int) curr_limits.rlim_cur, (int) curr_limits.rlim_max, (int) new_limits.rlim_cur, (int) new_limits.rlim_max);
 
 	currPeriod = SSR_PERIOD;
 	initialize(numberOfPlanes);
@@ -59,6 +45,7 @@ int SSR::stop() {
 void *SSR::startSSR(void *context) { ((SSR *)context)->operateSSR(); }
 
 int SSR::initialize(int numberOfPlanes) {
+	std::cout << "ssr initialize start\n";
 	numPlanes = numberOfPlanes;
 
 	// set thread in detached state
@@ -73,19 +60,21 @@ int SSR::initialize(int numberOfPlanes) {
 	}
 
 	// open list of waiting planes shm
-	int shm_waitingPlanes = shm_open("waiting_planes", O_RDWR, 0666);
+	int shm_waitingPlanes = shm_open("waiting_planes", O_RDONLY, 0666);
 	if (shm_waitingPlanes == -1) {
 		perror("in shm_open() SSR waiting planes");
 		exit(1);
 	}
 
 	// map waiting planes shm
-	void *waitingPlanesPtr = mmap(0, SIZE_SHM_PSR, PROT_READ | PROT_WRITE, MAP_SHARED,
+	void *waitingPlanesPtr = mmap(0, SIZE_SHM_PSR, PROT_READ, MAP_SHARED,
 			shm_waitingPlanes, 0);
 	if (waitingPlanesPtr == MAP_FAILED) {
 		perror("in map() SSR waiting planes");
 		exit(1);
 	}
+
+	std::cout << "before planes\n";
 
 	std::string FD_buffer = "";
 
@@ -96,7 +85,7 @@ int SSR::initialize(int numberOfPlanes) {
 			waitingFileNames.push_back(FD_buffer);
 
 			// open shm for current plane
-			int shm_plane = shm_open(FD_buffer.c_str(), O_RDWR, 0666);
+			int shm_plane = shm_open(FD_buffer.c_str(), O_RDONLY, 0666);
 			if (shm_plane == -1) {
 				perror("in shm_open() SSR plane");
 
@@ -104,7 +93,7 @@ int SSR::initialize(int numberOfPlanes) {
 			}
 
 			// map memory for current plane
-			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
 			if (ptr == MAP_FAILED) {
 				perror("in map() SSR plane");
 				exit(1);
@@ -118,7 +107,7 @@ int SSR::initialize(int numberOfPlanes) {
 			waitingFileNames.push_back(FD_buffer);
 
 			// open shm for current plane
-			int shm_plane = shm_open(FD_buffer.c_str(), O_RDWR, 0666);
+			int shm_plane = shm_open(FD_buffer.c_str(), O_RDONLY, 0666);
 			if (shm_plane == -1) {
 				perror("in shm_open() SSR plane");
 
@@ -126,7 +115,7 @@ int SSR::initialize(int numberOfPlanes) {
 			}
 
 			// map memory for current plane
-			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
+			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
 			if (ptr == MAP_FAILED) {
 				perror("in map() SSR plane");
 				exit(1);
@@ -138,15 +127,16 @@ int SSR::initialize(int numberOfPlanes) {
 
 		FD_buffer += readChar;
 	}
+	std::cout << "after planes\n";
 
 	// open list of waiting planes shm
-	shm_flyingPlanes = shm_open("flying_planes", O_RDONLY, 0666);
+	shm_flyingPlanes = shm_open("flying_planes", O_RDWR, 0666);
 	if (shm_flyingPlanes == -1) {
 		perror("in shm_open() SSR: flying planes");
 		exit(1);
 	}
 
-	flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ, MAP_SHARED,
+	flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED,
 			shm_flyingPlanes, 0);
 	if (flyingPlanesPtr == MAP_FAILED) {
 		perror("in map() SSR: flying planes");
@@ -154,14 +144,14 @@ int SSR::initialize(int numberOfPlanes) {
 	}
 
 	// open airspace shm
-	shm_airspace = shm_open("airspace", O_RDONLY, 0666);
+	shm_airspace = shm_open("airspace", O_RDWR, 0666);
 	if (shm_airspace == -1) {
 		perror("in shm_open() SSR: airspace");
 		exit(1);
 	}
 
 	// map airspace shm
-	airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ, MAP_SHARED,
+	airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED,
 			shm_airspace, 0);
 	if (airspacePtr == MAP_FAILED) {
 		perror("in map() SSR: airspace");
