@@ -6,8 +6,33 @@
  */
 
 #include "SSR.h"
+#include <sys/resource.h>
 
 SSR::SSR(int numberOfPlanes) {
+	struct rlimit curr_limits, new_limits;
+	getrlimit(RLIMIT_AS, &curr_limits);
+	printf("soft limit files: %d\nhard limit files: %d\n", (int) curr_limits.rlim_cur, (int) curr_limits.rlim_max );
+
+	new_limits.rlim_cur = 1000;
+	new_limits.rlim_max = 1000;
+	setrlimit(RLIMIT_AS, &new_limits);
+
+	struct rlimit curr_data, new_data;
+	getrlimit(RLIMIT_DATA, &curr_data);
+	printf("soft limit data: %d\nhard limit data: %d\n", (int) curr_data.rlim_cur, (int) curr_data.rlim_max );
+
+	new_limits.rlim_cur = 1000;
+	new_limits.rlim_max = 1000;
+	setrlimit(RLIMIT_DATA, &new_data);
+
+	struct rlimit curr_mem, new_mem;
+	getrlimit(RLIMIT_MEMLOCK, &curr_mem);
+	printf("soft limit memory: %d\nhard limit memory: %d\n", (int) curr_mem.rlim_cur, (int) curr_mem.rlim_max );
+
+	new_mem.rlim_cur = 1000;
+	new_mem.rlim_max = 1000;
+	setrlimit(RLIMIT_MEMLOCK, &new_mem);
+
 	currPeriod = SSR_PERIOD;
 	initialize(numberOfPlanes);
 }
@@ -71,7 +96,7 @@ int SSR::initialize(int numberOfPlanes) {
 			waitingFileNames.push_back(FD_buffer);
 
 			// open shm for current plane
-			int shm_plane = shm_open(FD_buffer.c_str(), O_RDONLY, 0666);
+			int shm_plane = shm_open(FD_buffer.c_str(), O_RDWR, 0666);
 			if (shm_plane == -1) {
 				perror("in shm_open() SSR plane");
 
@@ -79,7 +104,7 @@ int SSR::initialize(int numberOfPlanes) {
 			}
 
 			// map memory for current plane
-			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
+			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
 			if (ptr == MAP_FAILED) {
 				perror("in map() SSR plane");
 				exit(1);
@@ -93,7 +118,7 @@ int SSR::initialize(int numberOfPlanes) {
 			waitingFileNames.push_back(FD_buffer);
 
 			// open shm for current plane
-			int shm_plane = shm_open(FD_buffer.c_str(), O_RDONLY, 0666);
+			int shm_plane = shm_open(FD_buffer.c_str(), O_RDWR, 0666);
 			if (shm_plane == -1) {
 				perror("in shm_open() SSR plane");
 
@@ -101,7 +126,7 @@ int SSR::initialize(int numberOfPlanes) {
 			}
 
 			// map memory for current plane
-			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ, MAP_SHARED, shm_plane, 0);
+			void *ptr = mmap(0, SIZE_SHM_PLANES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_plane, 0);
 			if (ptr == MAP_FAILED) {
 				perror("in map() SSR plane");
 				exit(1);
@@ -115,13 +140,13 @@ int SSR::initialize(int numberOfPlanes) {
 	}
 
 	// open list of waiting planes shm
-	shm_flyingPlanes = shm_open("flying_planes", O_RDWR, 0666);
+	shm_flyingPlanes = shm_open("flying_planes", O_RDONLY, 0666);
 	if (shm_flyingPlanes == -1) {
 		perror("in shm_open() SSR: flying planes");
 		exit(1);
 	}
 
-	flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ | PROT_WRITE, MAP_SHARED,
+	flyingPlanesPtr = mmap(0, SIZE_SHM_SSR, PROT_READ, MAP_SHARED,
 			shm_flyingPlanes, 0);
 	if (flyingPlanesPtr == MAP_FAILED) {
 		perror("in map() SSR: flying planes");
@@ -129,14 +154,14 @@ int SSR::initialize(int numberOfPlanes) {
 	}
 
 	// open airspace shm
-	shm_airspace = shm_open("airspace", O_RDWR, 0666);
+	shm_airspace = shm_open("airspace", O_RDONLY, 0666);
 	if (shm_airspace == -1) {
 		perror("in shm_open() SSR: airspace");
 		exit(1);
 	}
 
 	// map airspace shm
-	airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ | PROT_WRITE, MAP_SHARED,
+	airspacePtr = mmap(0, SIZE_SHM_AIRSPACE, PROT_READ, MAP_SHARED,
 			shm_airspace, 0);
 	if (airspacePtr == MAP_FAILED) {
 		perror("in map() SSR: airspace");
@@ -247,8 +272,8 @@ bool SSR::readFlyingPlanes() {
 
 			// if not, add to list
 			if (!inFile) {
-//				openFiles++;
-//				std::cout << "ssr files open: " << openFiles << "\n";
+				//				openFiles++;
+				//				std::cout << "ssr files open: " << openFiles << "\n";
 				write = true; // found plane that is not already flying
 
 				// move from waiting to flying list
@@ -257,7 +282,7 @@ bool SSR::readFlyingPlanes() {
 				while(itName != waitingFileNames.end() &&
 						itPtr != waitingPtrs.end()){
 					if((*itName) == FD_buffer){
-//						std::cout << "found waiting plane to move: " << (*itName) << "\n";
+						//						std::cout << "found waiting plane to move: " << (*itName) << "\n";
 						flyingFileNames.push_back((*itName));
 						planePtrs.push_back((*itPtr));
 						itName = waitingFileNames.erase(itName);
@@ -288,8 +313,8 @@ bool SSR::readFlyingPlanes() {
 
 			// if not, add to list
 			if (!inFile) {
-//				openFiles++;
-//				std::cout << "ssr files open: " << openFiles << "\n";
+				//				openFiles++;
+				//				std::cout << "ssr files open: " << openFiles << "\n";
 				write = true; // found new flying plane that wasn't already flying
 
 				// move from waiting to flying list
@@ -298,7 +323,7 @@ bool SSR::readFlyingPlanes() {
 				while(itName != waitingFileNames.end() &&
 						itPtr != waitingPtrs.end()){
 					if((*itName) == FD_buffer){
-//						std::cout << "found waiting plane to move: " << (*itName) << "\n";
+						//						std::cout << "found waiting plane to move: " << (*itName) << "\n";
 						flyingFileNames.push_back((*itName));
 						planePtrs.push_back((*itPtr));
 						itName = waitingFileNames.erase(itName);
