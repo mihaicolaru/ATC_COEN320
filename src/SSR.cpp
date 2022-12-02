@@ -10,15 +10,6 @@
 #include <sys/types.h>
 
 SSR::SSR(int numberOfPlanes) {
-	// set new limit of max open files to 10000 to allow for more than 200 planes
-	struct rlimit curr_limits, new_limits;
-	pid_t curr_id = getpid();
-	int pid = (int) curr_id;
-	new_limits.rlim_cur = 10000;
-	new_limits.rlim_max = 10000;
-	prlimit(pid, RLIMIT_NOFILE, &new_limits, &curr_limits);
-	printf("old soft limit files: %d\nold hard limit files: %d\nnew soft limit files: %d\nnew hard limit files: %d\n", (int) curr_limits.rlim_cur, (int) curr_limits.rlim_max, (int) new_limits.rlim_cur, (int) new_limits.rlim_max);
-
 	currPeriod = SSR_PERIOD;
 	initialize(numberOfPlanes);
 }
@@ -45,7 +36,6 @@ int SSR::stop() {
 void *SSR::startSSR(void *context) { ((SSR *)context)->operateSSR(); }
 
 int SSR::initialize(int numberOfPlanes) {
-	std::cout << "ssr initialize start\n";
 	numPlanes = numberOfPlanes;
 
 	// set thread in detached state
@@ -66,6 +56,15 @@ int SSR::initialize(int numberOfPlanes) {
 		exit(1);
 	}
 
+	// set new limit of max open files to 10000 to allow for more than 200 planes
+	struct rlimit curr_limits, new_limits;
+	pid_t curr_id = getpid();
+	int pid = (int) curr_id;
+	new_limits.rlim_cur = 10000;
+	new_limits.rlim_max = 10000;
+	prlimit(pid, RLIMIT_NOFILE, &new_limits, &curr_limits);
+//	printf("old soft limit files: %d\nold hard limit files: %d\nnew soft limit files: %d\nnew hard limit files: %d\n", (int) curr_limits.rlim_cur, (int) curr_limits.rlim_max, (int) new_limits.rlim_cur, (int) new_limits.rlim_max);
+
 	// map waiting planes shm
 	void *waitingPlanesPtr = mmap(0, SIZE_SHM_PSR, PROT_READ, MAP_SHARED,
 			shm_waitingPlanes, 0);
@@ -73,8 +72,6 @@ int SSR::initialize(int numberOfPlanes) {
 		perror("in map() SSR waiting planes");
 		exit(1);
 	}
-
-	std::cout << "before planes\n";
 
 	std::string FD_buffer = "";
 
@@ -127,7 +124,6 @@ int SSR::initialize(int numberOfPlanes) {
 
 		FD_buffer += readChar;
 	}
-	std::cout << "after planes\n";
 
 	// open list of waiting planes shm
 	shm_flyingPlanes = shm_open("flying_planes", O_RDWR, 0666);
