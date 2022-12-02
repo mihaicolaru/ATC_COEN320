@@ -81,7 +81,8 @@ int ComputerSystem::initialize() {
   }
 
   // map period shm
-  periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED, shm_period, 0);
+  periodPtr = mmap(0, SIZE_SHM_PERIOD, PROT_READ | PROT_WRITE, MAP_SHARED,
+                   shm_period, 0);
   if (periodPtr == MAP_FAILED) {
     perror("in map() PSR: period");
     exit(1);
@@ -189,6 +190,8 @@ void *ComputerSystem::calculateTrajectories() {
 
   int rcvid;
   Message msg;
+  // Logging commands
+  std::ofstream out("command");
 
   bool done = false;
   while (1) {
@@ -203,7 +206,7 @@ void *ComputerSystem::calculateTrajectories() {
       cleanPredictions();
 
       // compute airspace violations for all planes in the airspace
-      computeViolations();
+      computeViolations(&out);
 
       // send airspace info to display / prune airspace info
       writeToDisplay();
@@ -225,6 +228,8 @@ void *ComputerSystem::calculateTrajectories() {
 
     rcvid = MsgReceive(chid, &msg, sizeof(msg), NULL);
   }
+
+  out.close();
 
   ChannelDestroy(chid);
 
@@ -911,7 +916,7 @@ void ComputerSystem::cleanPredictions() {
   }
 }
 
-void ComputerSystem::computeViolations() {
+void ComputerSystem::computeViolations(std::ofstream *out) {
   //		std::cout << "computing airspace violations\n";
   auto itIndex = trajectoryPredictions.begin();
   while (itIndex != trajectoryPredictions.end()) {
@@ -981,6 +986,16 @@ void ComputerSystem::computeViolations() {
               // write command to plane
               sprintf((char *)comm + k, "%s", command.c_str());
 
+              std::streambuf *coutbuf = std::cout.rdbuf(); // save old buf
+              std::cout.rdbuf(out->rdbuf()); // redirect std::cout to command
+
+              // this used to print to stdout but now we redirected it to
+              // command
+              std::cout << "Command: Plane " << (*itIndex)->id
+                        << " increases altitude by 200 feet" << std::endl;
+
+              std::cout.rdbuf(coutbuf); // reset to standard output again
+
               // current plane comm found
               currComm = true;
             }
@@ -1005,6 +1020,16 @@ void ComputerSystem::computeViolations() {
 
               // write command to plane
               sprintf((char *)comm + k, "%s", command.c_str());
+
+              std::streambuf *coutbuf = std::cout.rdbuf(); // save old buf
+              std::cout.rdbuf(out->rdbuf()); // redirect std::cout to command
+
+              // this used to print to stdout but now we redirected it to
+              // command
+              std::cout << "Command: Plane " << (*itNext)->id
+                        << " decreases altitude by 200 feet" << std::endl;
+
+              std::cout.rdbuf(coutbuf); // reset to standard output again
 
               // compared plane comm found
               compComm = true;

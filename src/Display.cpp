@@ -93,6 +93,7 @@ void *Display::updateDisplay(void) {
         if (readChar == 't') {
           std::cout << "display done\n";
           ChannelDestroy(chid);
+          out.close();
           return 0;
         }
         // Check for ending character
