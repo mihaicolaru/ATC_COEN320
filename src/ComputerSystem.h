@@ -81,7 +81,7 @@ private:
   void cleanPredictions();
 
   // ================= compute airspace violations =================
-  void computeViolations();
+  void computeViolations(std::ofstream *out);
 
   // ================= send airspace info to display =================
   void writeToDisplay();
@@ -127,7 +127,6 @@ private:
   // comm list (same as waiting list psr)
   std::vector<void *> commPtrs;
   std::vector<std::string> commNames;
-
 };
 
 #endif /* COMPUTERSYSTEM_H_ */

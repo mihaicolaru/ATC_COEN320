@@ -3,7 +3,7 @@
 Timer::Timer(int chid) {
   coid = ConnectAttach(0, 0, chid, 0, 0);
   if (coid == -1) {
-    fprintf(stderr, "%s: couldn't create channel\n");
+    fprintf(stderr, "%s: couldn't create channel!\n");
     perror(NULL);
     exit(EXIT_FAILURE);
   }
@@ -13,7 +13,7 @@ Timer::Timer(int chid) {
 
   // create the timer, binding it to the event
   if (timer_create(CLOCK_REALTIME, &event, &timerid) == -1) {
-    fprintf(stderr, "couldn't create a timer, errno %s\n", errno);
+    fprintf(stderr, "couldn't create a timer, errno %d\n", errno);
     perror(NULL);
     exit(EXIT_FAILURE);
   }
