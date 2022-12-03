@@ -951,7 +951,7 @@ void ComputerSystem::computeViolations(std::ofstream *out) {
           break;
         }
 
-        if ((abs(currX - compX) <= 3000 || abs(currY - compY) <= 3000) &&
+        if ((abs(currX - compX) <= 3000 && abs(currY - compY) <= 3000) &&
             abs(currZ - compZ) <= 1000) {
           std::cout << "airspace violation detected between planes "
                     << (*itIndex)->id << " and " << (*itNext)->id
