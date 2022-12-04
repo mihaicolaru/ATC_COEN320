@@ -25,7 +25,6 @@ Plane::~Plane() {
 
 // call static function to start thread
 int Plane::start() {
-  //		std::cout << getFD() << " start called\n";
   if (pthread_create(&planeThread, &attr, &Plane::startPlane, (void *)this) !=
       EOK) {
     planeThread = 0;
@@ -36,14 +35,12 @@ int Plane::start() {
 
 // join execution thread
 bool Plane::stop() {
-  //		std::cout << getFD() << " stop called\n";
   pthread_join(planeThread, NULL);
   return 0;
 }
 
 // entry point for execution thread
 void *Plane::startPlane(void *context) {
-  //		std::cout << "updateStart called\n";
   // set priority
   ((Plane *)context)->flyPlane();
   return 0;
@@ -51,7 +48,6 @@ void *Plane::startPlane(void *context) {
 
 // initialize thread and shm members
 int Plane::initialize() {
-
   // set thread in detached state
   int rc = pthread_attr_init(&attr);
   if (rc) {
@@ -65,8 +61,6 @@ int Plane::initialize() {
 
   // instantiate filename
   fileName = "plane_" + std::to_string(ID);
-
-  //		printf("Plane %i filename: %s\n", ID, fileName.c_str());
 
   // open shm object
   shm_fd = shm_open(fileName.c_str(), O_CREAT | O_RDWR, 0666);
@@ -90,7 +84,6 @@ int Plane::initialize() {
 
   // initial write + space for comm system
   sprintf((char *)ptr, "%s0;", planeString.c_str());
-  //		printf("%s\n", ptr);
 
   return 0;
 }
@@ -115,8 +108,6 @@ void *Plane::flyPlane(void) {
   while (1) {
     if (start) {
       // first cycle, wait for arrival time
-      //				std::cout << getFD() << " first
-      // iteration\n";
       start = false;
     } else {
       if (rcvid == 0) {
@@ -152,17 +143,13 @@ void Plane::answerComm() {
   // check if executing command
   if (commandInProgress) {
     // decrement counter
-    //			std::cout << "command execution incomplete\n";
     commandCounter--;
     if (commandCounter <= 0) {
       commandInProgress = false;
-      //				speed[2] = 0;
     }
     return;
   }
   speed[2] = 0;
-
-  //		printf("answerComm() read: %s\n", ptr);
 
   // find end of plane info
   int i = 0;
@@ -176,7 +163,6 @@ void Plane::answerComm() {
 
   // check for command presence
   if (*((char *)ptr + i + 1) == ';' || *((char *)ptr + i + 1) == '0') {
-    //			std::cout << "no command\n";
     return;
   }
 
@@ -189,9 +175,7 @@ void Plane::answerComm() {
     buffer += readChar;
     readChar = *((char *)ptr + ++i);
   }
-  //		readChar = *((char *)ptr + ++i);
   buffer += ';';
-  //		std::cout << getFD() << " read command: " << buffer << "\n";
 
   // parse command
   std::string parseBuf = "";
@@ -202,16 +186,10 @@ void Plane::answerComm() {
     switch (currChar) {
     case ';':
       // reached end of command, apply command
-      //				std::cout << "setting vel[" << currParam
-      //<<
-      //"] to " << parseBuf << "\n";
       speed[currParam] = std::stoi(parseBuf);
       break;
     case '/':
       // read end of one velocity command, apply command, clear buffer
-      //				std::cout << "setting vel[" << currParam
-      //<<
-      //"] to " << parseBuf << "\n";
       speed[currParam] = std::stoi(parseBuf);
       parseBuf = "";
       continue;
@@ -245,18 +223,15 @@ void Plane::answerComm() {
 
   // remove command
   sprintf((char *)ptr + startIndex, "0;");
-  //		printf("after remove command: %s\n", ptr);
 }
 
 // update position based on speed
 void Plane::updatePosition() {
-  //		std::cout << getFD() << " updating position\n";
   for (int i = 0; i < 3; i++) {
     position[i] = position[i] + speed[i];
   }
   // save modifications to string
   updateString();
-  //		Print();
 }
 
 // stringify plane data members

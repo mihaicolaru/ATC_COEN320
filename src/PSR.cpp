@@ -237,10 +237,6 @@ bool PSR::readWaitingPlanes() {
 
     // extract arrival time
     int curr_arrival_time = atoi((char *)(*it) + j + 1);
-    //						std::cout << "current plane
-    //arrival time:
-    //"
-    //<< curr_arrival_time << "\n";
 
     // compare with current time
     // if t_arrival < t_current
@@ -252,7 +248,6 @@ bool PSR::readWaitingPlanes() {
       // add current fd to airspace fd vector
       flyingFileNames.push_back(waitingFileNames.at(i));
 
-//      shm_unlink(waitingFileNames.at(i).c_str());
 
       // remove current fd from waiting planes fd vector
       waitingFileNames.erase(waitingFileNames.begin() + i);
@@ -261,8 +256,7 @@ bool PSR::readWaitingPlanes() {
       it = planePtrs.erase(it);
 
       numWaitingPlanes--;
-      //						std::cout << "psr number
-      // of waiting planes: " << numWaitingPlanes << "\n";
+
     } else {
       i++; // only increment if no plane to transfer
       ++it;
