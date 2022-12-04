@@ -392,7 +392,6 @@ bool ComputerSystem::readAirspace() {
         flyingPlanesInfo.push_back(
             currentAircraft); // add to struct pointer vector
 
-        // predictions for plane " << currentAircraft->id << "\n";
         trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
         currentPrediction->id = currentAircraft->id;
@@ -710,7 +709,6 @@ void ComputerSystem::cleanPredictions() {
 }
 
 void ComputerSystem::computeViolations(std::ofstream *out) {
-  //		std::cout << "computing airspace violations\n";
   auto itIndex = trajectoryPredictions.begin();
   while (itIndex != trajectoryPredictions.end()) {
     auto itNext = itIndex;

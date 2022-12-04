@@ -83,9 +83,9 @@ void *Display::updateDisplay(void) {
     if (rcvid == 0) {
       pthread_mutex_lock(&mutex);
       // Parsing buffers
-      int axis = 0; // 0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
+      int axis = 0, z = 0; // 0=ID, 1=X, 2=Y, 3=Z, 4=Height display control bit;
       std::string buffer = "";
-      std::string x = "", y = "", z = "", display_bit = "";
+      std::string x = "", y = "", display_bit = "";
       std::string id = "";
       // Read from shared memory pointer
       for (int i = 0; i < SIZE_SHM_DISPLAY; i++) {
@@ -114,7 +114,8 @@ void *Display::updateDisplay(void) {
               y = buffer;
               break;
             case 3:
-              z = buffer;
+              z = stoi(buffer);
+              z+= SPACE_ELEVATION;
               break;
             case 4:
               display_bit = buffer;
@@ -134,11 +135,11 @@ void *Display::updateDisplay(void) {
             // Height display control
             if (display_bit == "1") {
               height_display = height_display + "Plane " + id +
-                               " has height of " + z + " meters\n";
+                               " has height of " + std::to_string(z) + " ft\n";
             }
             x = "";
             y = "";
-            z = "";
+            z = 0;
             id = "";
             display_bit = "";
             axis = 0;
