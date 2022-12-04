@@ -24,7 +24,6 @@ ATC::~ATC() {
 }
 
 int ATC::start() {
-  //		std::cout << "atc start called\n";
 
   // start threaded objects
   psr->start();
@@ -52,7 +51,6 @@ int ATC::start() {
 
 // read input file and
 int ATC::readInput() {
-  //		std::cout << "atc readinput\n";
   // open input.txt
   std::string filename = "./input.txt";
   std::ifstream input_file_stream;
@@ -69,21 +67,10 @@ int ATC::readInput() {
 
   std::string separator = " ";
 
-  //		std::cout << "atc before parse\n";
-
   // parse input.txt to create plane objects
   while (input_file_stream >> ID >> arrivalTime >> arrivalCordX >>
          arrivalCordY >> arrivalCordZ >> arrivalSpeedX >> arrivalSpeedY >>
          arrivalSpeedZ) {
-
-    //			std::cout << ID << separator << arrivalTime <<
-    // separator << arrivalCordX
-    //					<< separator << arrivalCordY <<
-    // separator << arrivalCordZ
-    //					<< separator << arrivalSpeedX <<
-    // separator << arrivalSpeedY
-    //					<< separator << arrivalSpeedZ <<
-    // std::endl;
 
     int pos[3] = {arrivalCordX, arrivalCordY, arrivalCordZ};
     int vel[3] = {arrivalSpeedX, arrivalSpeedY, arrivalSpeedZ};
@@ -93,13 +80,6 @@ int ATC::readInput() {
     planes.push_back(plane);
   }
 
-  //		std::cout << "atc after parse\n";
-
-  //		int i = 0;
-  //		for (Plane *plane : planes) {
-  //			printf("readinput: %s\n", plane->getFD());
-  //		}
-
   return 0;
 }
 
@@ -107,8 +87,6 @@ int ATC::readInput() {
 int ATC::initialize() {
   // read input from file
   readInput();
-
-  //		std::cout << "atc initialize after readInput()\n";
 
   // ============ initialize shm for waiting planes (contains all planes)
   // ============
@@ -129,26 +107,15 @@ int ATC::initialize() {
     return -1;
   }
 
-  //		std::cout << "atc initialize before writing waiting planes
-  // shm\n";
-
   // save file descriptors to shm
   int i = 0;
   for (Plane *plane : planes) {
-    //			printf("initialize: %s\n", plane->getFD());
-
     sprintf((char *)waitingPtr + i, "%s,", plane->getFD());
-
-    //			printf("length of planeFD: %zu\n",
-    // strlen(plane->getFD()));
 
     // move index
     i += (strlen(plane->getFD()) + 1);
   }
   sprintf((char *)waitingPtr + i - 1, ";"); // file termination character
-
-  //		std::cout << "atc initialize after writing waiting planes
-  // shm\n";
 
   // ============ initialize shm for flying planes (contains no planes)
   // ============
@@ -170,8 +137,6 @@ int ATC::initialize() {
   }
   sprintf((char *)flyingPtr, ";");
 
-  //		std::cout << "atc after writing flying planes shm\n";
-
   // ============ initialize shm for airspace (compsys <-> ssr) ============
   shm_airspace = shm_open("airspace", O_CREAT | O_RDWR, 0666);
   if (shm_airspace == -1) {
@@ -190,7 +155,6 @@ int ATC::initialize() {
     return -1;
   }
   sprintf((char *)airspacePtr, ";");
-  //		std::cout << "atc after writing airspace shm\n";
 
   // ============ initialize shm for period update ============
   shm_period = shm_open("period", O_CREAT | O_RDWR, 0666);
@@ -212,8 +176,6 @@ int ATC::initialize() {
   int per = CS_PERIOD;
   std::string CSPeriod = std::to_string(per);
   sprintf((char *)periodPtr, CSPeriod.c_str());
-  //		printf("atc period shm: %s\n", periodPtr);
-  //		std::cout << "atc after writing period shm\n";
 
   // ============ initialize shm for display ============
   shm_display = shm_open("display", O_CREAT | O_RDWR, 0666);
@@ -230,26 +192,20 @@ int ATC::initialize() {
     return -1;
   }
   sprintf((char *)displayPtr, ";");
-  //		std::cout << "atc after writing display shm\n";
 
   // ============ create threaded objects ============
   // create PSR object with number of planes
   PSR *current_psr = new PSR(planes.size());
   psr = current_psr;
-  //		std::cout << "atc psr created\n";
 
   SSR *current_ssr = new SSR(planes.size());
   ssr = current_ssr;
-  //		std::cout << "atc ssr created\n";
 
   Display *newDisplay = new Display(); // Add nb of existing plane (in air)
   display = newDisplay;
-  //		std::cout << "atc display created\n";
 
   ComputerSystem *newCS = new ComputerSystem(planes.size());
   computerSystem = newCS;
-
-  //		std::cout << "atc compsys created\n";
 
   return 0; // set to error code if any
 }
