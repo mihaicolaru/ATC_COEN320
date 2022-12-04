@@ -275,9 +275,9 @@ bool ComputerSystem::readAirspace() {
             if (prediction->id == craft->id) {
 
               // if end of prediction reached, break
-              if (prediction->t >= prediction->posX.size() ||
-                  prediction->t >= prediction->posY.size() ||
-                  prediction->t >= prediction->posZ.size()) {
+              if (prediction->t >= (int)prediction->posX.size() ||
+                  prediction->t >= (int)prediction->posY.size() ||
+                  prediction->t >= (int)prediction->posZ.size()) {
                 break;
               }
 
@@ -463,9 +463,9 @@ bool ComputerSystem::readAirspace() {
             if (prediction->id == craft->id) {
 
               // if end of prediction reached, break
-              if (prediction->t >= prediction->posX.size() ||
-                  prediction->t >= prediction->posY.size() ||
-                  prediction->t >= prediction->posZ.size()) {
+              if (prediction->t >= (int)prediction->posX.size() ||
+                  prediction->t >= (int)prediction->posY.size() ||
+                  prediction->t >= (int)prediction->posZ.size()) {
                 break;
               }
 

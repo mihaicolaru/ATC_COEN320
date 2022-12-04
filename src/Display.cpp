@@ -44,12 +44,14 @@ int Display::initialize() {
     perror("in map() Display");
     exit(1);
   }
+
+  return 0;
 }
 
 void Display::start() {
   if (pthread_create(&displayThread, &attr, &Display::startDisplay,
                      (void *)this) != EOK) {
-    displayThread = NULL;
+    displayThread = 0;
   }
 }
 
@@ -60,6 +62,7 @@ int Display::stop() {
 
 void *Display::startDisplay(void *context) {
   ((Display *)context)->updateDisplay();
+  return NULL;
 }
 
 void *Display::updateDisplay(void) {
@@ -115,7 +118,7 @@ void *Display::updateDisplay(void) {
               break;
             case 3:
               z = stoi(buffer);
-              z+= SPACE_ELEVATION;
+              z += SPACE_ELEVATION;
               break;
             case 4:
               display_bit = buffer;
