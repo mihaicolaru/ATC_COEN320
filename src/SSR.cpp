@@ -265,7 +265,6 @@ bool SSR::readFlyingPlanes() {
 				while(itName != waitingFileNames.end() &&
 						itPtr != waitingPtrs.end()){
 					if((*itName) == FD_buffer){
-						//						std::cout << "found waiting plane to move: " << (*itName) << "\n";
 						flyingFileNames.push_back((*itName));
 						planePtrs.push_back((*itPtr));
 						itName = waitingFileNames.erase(itName);
