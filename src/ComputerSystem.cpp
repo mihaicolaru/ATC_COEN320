@@ -21,7 +21,6 @@ ComputerSystem::~ComputerSystem() {
 
 // start computer system
 void ComputerSystem::start() {
-  //		std::cout << "computer system start called\n";
   if (pthread_create(&computerSystemThread, &attr,
                      &ComputerSystem::startComputerSystem,
                      (void *)this) != EOK) {
@@ -31,7 +30,6 @@ void ComputerSystem::start() {
 
 // join computer system thread
 int ComputerSystem::stop() {
-  //		std::cout << "computer system stop called\n";
   pthread_join(computerSystemThread, NULL);
   return 0;
 }
@@ -124,8 +122,6 @@ int ComputerSystem::initialize() {
     char readChar = *((char *)commPtr + i);
 
     if (readChar == ',') {
-      //				std::cout << "compsys initialize() found
-      // a planeFD: " << FD_buffer << "\n";
 
       // open shm for current plane
       int shm_plane = shm_open(buffer.c_str(), O_RDWR, 0666);
@@ -237,21 +233,8 @@ void *ComputerSystem::calculateTrajectories() {
 }
 
 bool ComputerSystem::readAirspace() {
-  //		std::cout << "before read airspace\n";
   std::string readBuffer = "";
   int j = 0;
-
-  //				std::cout << "compsys current planes:\n";
-  //				for(aircraft *craft : flyingPlanesInfo){
-  //					std::cout << "plane " << craft->id << ",
-  // keep:
-  //"
-  //<< craft->keep
-  //<< "\n";
-  //				}
-  //
-  //				printf("computer system read airspace: %s\n",
-  // ptr_airspace);
 
   // variable buffer, these get overwritten as needed
   int id, arrTime, pos[3], vel[3];
@@ -266,34 +249,16 @@ bool ComputerSystem::readAirspace() {
     if (readChar == ';') {
       // i=0 no planes found
       if (i == 0) {
-        //					std::cout << "compsys no flying
-        // planes\n";
         break;
       }
 
       // load last field in buffer
       vel[2] = atoi(readBuffer.c_str());
-      //				std::cout << "compsys found last plane "
-      //<< id
-      //<< ", checking if already in list\n";
 
       // check if already in airspace, if yes update with current data
       bool inList = false;
       for (aircraft *craft : flyingPlanesInfo) {
-        //					std::cout << "target plane id: "
-        //<< id
-        //<<
-        //"\n"; 					std::cout << "current
-        // plane:
-        //"
-        //<< craft->id << "\n";
-
         if (craft->id == id) {
-          //						std::cout << "compsys:
-          // plane
-          //"
-          //<< craft->id
-          //<< " already in list, updating new values\n";
           // if found, update with current info
           craft->pos[0] = pos[0];
           craft->pos[1] = pos[1];
@@ -306,26 +271,13 @@ bool ComputerSystem::readAirspace() {
           // it is already in the list, do not add new
           inList = true;
 
-          //						std::cout << "checking
-          // plane
-          //"
-          //<< craft->id
-          //<< " predictions\n";
-
           for (trajectoryPrediction *prediction : trajectoryPredictions) {
             if (prediction->id == craft->id) {
-              //								std::cout
-              //<< "prediction for plane " << craft->id << " found\n";
 
               // if end of prediction reached, break
               if (prediction->t >= prediction->posX.size() ||
                   prediction->t >= prediction->posY.size() ||
                   prediction->t >= prediction->posZ.size()) {
-                //									std::cout
-                //<< "plane
-                //"
-                //<< prediction->id << ": prediction already at end of
-                // scope\n";
                 break;
               }
 
@@ -333,8 +285,6 @@ bool ComputerSystem::readAirspace() {
               if (prediction->posX.at(prediction->t) == craft->pos[0] &&
                   prediction->posY.at(prediction->t) == craft->pos[1] &&
                   prediction->posZ.at(prediction->t) == craft->pos[2]) {
-                //									std::cout
-                //<< "predictions match\n";
                 // set prediction index to next
                 // update last entry in predictions
                 auto it = prediction->posX.end();
@@ -360,11 +310,6 @@ bool ComputerSystem::readAirspace() {
                 }
                 // if not, just increment
                 if (outOfBounds) {
-                  //										std::cout
-                  //<< "plane
-                  //"
-                  //<< prediction->id << " prediction already reaches end of
-                  // airspace\n";
                   prediction->keep = true;
                   prediction->t++;
                   break;
@@ -387,8 +332,6 @@ bool ComputerSystem::readAirspace() {
               }
               // update the prediction
               else {
-                //									std::cout
-                //<< "predictions do not match, recomputing predictions\n";
                 prediction->posX.clear();
                 prediction->posY.clear();
                 prediction->posZ.clear();
@@ -416,8 +359,6 @@ bool ComputerSystem::readAirspace() {
                     outOfBounds = true;
                   }
                   if (outOfBounds) {
-                    //													std::cout
-                    //<< "end of plane " << prediction->id << " prediction\n";
                     break;
                   }
                 }
@@ -431,45 +372,12 @@ bool ComputerSystem::readAirspace() {
               }
             }
           }
-          //								std::cout
-          //<< "compsys plane
-          //"
-          //<< craft->id
-          //<< " new values:\n"
-          //										<<
-          //"posx
-          //"
-          //<< craft->pos[0]
-          //<<
-          //", posy
-          //"
-          //<< craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-          //										<<
-          //"velx
-          //"
-          //<< craft->vel[0]
-          //<<
-          //", vely
-          //"
-          //<< craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-          //										<<
-          //"set keep value to:
-          //"
-          //<< craft->keep
-          //<<
-          //"\n";
           break;
         }
       }
 
       // if plane was not already in the list, add it
       if (!inList) {
-        //					std::cout << "compsys found new
-        // plane
-        //"
-        //<< id
-        //<<
-        //"\n";
         // new pointer to struct, set members from read
         aircraft *currentAircraft = new aircraft();
         currentAircraft->id = id;
@@ -484,7 +392,6 @@ bool ComputerSystem::readAirspace() {
         flyingPlanesInfo.push_back(
             currentAircraft); // add to struct pointer vector
 
-        //					std::cout << "computing new
         // predictions for plane " << currentAircraft->id << "\n";
         trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
@@ -513,8 +420,6 @@ bool ComputerSystem::readAirspace() {
             outOfBounds = true;
           }
           if (outOfBounds) {
-            //							std::cout
-            //<< "end of plane " << currentPrediction->id << " predictions\n";
             break;
           }
         }
@@ -536,27 +441,12 @@ bool ComputerSystem::readAirspace() {
     else if (readChar == '/') {
       // load last value in buffer
       vel[2] = atoi(readBuffer.c_str());
-      //				std::cout << "compsys found next plane "
-      //<< id
-      //<< ", checking if already in list\n";
 
       // check if already in airspace, if yes update with current data
       bool inList = false;
       for (aircraft *craft : flyingPlanesInfo) {
-        //					std::cout << "target plane id: "
-        //<< id
-        //<<
-        //"\n"; 					std::cout << "current
-        // plane:
-        //"
-        //<< craft->id << "\n";
 
         if (craft->id == id) {
-          //						std::cout << "compsys:
-          // plane
-          //"
-          //<< craft->id
-          //<< " already in list, updating new values\n";
 
           // if found, update with current info
           craft->pos[0] = pos[0];
@@ -570,26 +460,13 @@ bool ComputerSystem::readAirspace() {
           // if already in list, do not add new
           inList = true;
 
-          //						std::cout << "checking
-          // plane
-          //"
-          //<< craft->id
-          //<< " predictions\n";
-
           for (trajectoryPrediction *prediction : trajectoryPredictions) {
             if (prediction->id == craft->id) {
-              //								std::cout
-              //<< "prediction for plane " << craft->id << " found\n";
 
               // if end of prediction reached, break
               if (prediction->t >= prediction->posX.size() ||
                   prediction->t >= prediction->posY.size() ||
                   prediction->t >= prediction->posZ.size()) {
-                //									std::cout
-                //<< "plane
-                //"
-                //<< prediction->id << ": prediction already at end of
-                // scope\n";
                 break;
               }
 
@@ -597,8 +474,6 @@ bool ComputerSystem::readAirspace() {
               if (prediction->posX.at(prediction->t) == craft->pos[0] &&
                   prediction->posY.at(prediction->t) == craft->pos[1] &&
                   prediction->posZ.at(prediction->t) == craft->pos[2]) {
-                //									std::cout
-                //<< "predictions match\n";
                 // set prediction index to next
                 // update last entry in predictions
                 auto it = prediction->posX.end();
@@ -624,11 +499,6 @@ bool ComputerSystem::readAirspace() {
                 }
                 // if not, just increment
                 if (outOfBounds) {
-                  //										std::cout
-                  //<< "plane
-                  //"
-                  //<< prediction->id << " prediction already reaches end of
-                  // airspace\n";
                   prediction->keep = true;
                   prediction->t++;
                   break;
@@ -651,8 +521,6 @@ bool ComputerSystem::readAirspace() {
               }
               // update the prediction
               else {
-                //									std::cout
-                //<< "predictions do not match, recomputing predictions\n";
                 prediction->posX.clear();
                 prediction->posY.clear();
                 prediction->posZ.clear();
@@ -680,9 +548,6 @@ bool ComputerSystem::readAirspace() {
                     outOfBounds = true;
                   }
                   if (outOfBounds) {
-                    //													std::cout
-                    //<< "reached end of plane " << prediction->id << "
-                    // predictions\n";
                     break;
                   }
                 }
@@ -697,46 +562,12 @@ bool ComputerSystem::readAirspace() {
             }
           }
 
-          //								std::cout
-          //<< "compsys plane
-          //"
-          //<< craft->id
-          //<< " new values:\n"
-          //										<<
-          //"posx
-          //"
-          //<< craft->pos[0]
-          //<<
-          //", posy
-          //"
-          //<< craft->pos[1] << ", posz " << craft->pos[2] << "\n"
-          //										<<
-          //"velx
-          //"
-          //<< craft->vel[0]
-          //<<
-          //", vely
-          //"
-          //<< craft->vel[1] << ", velz " << craft->vel[2] << "\n"
-          //										<<
-          //"set keep value to:
-          //"
-          //<< craft->keep
-          //<<
-          //"\n";
           break;
         }
       }
 
       // if plane was not already in the list, add it
       if (!inList) {
-        // new pointer to struct, set members from read
-        //					std::cout << "compsys found new
-        // plane
-        //"
-        //<< id
-        //<<
-        //"\n";
         aircraft *currentAircraft = new aircraft();
         currentAircraft->id = id;
         currentAircraft->t_arrival = arrTime;
@@ -750,8 +581,6 @@ bool ComputerSystem::readAirspace() {
         flyingPlanesInfo.push_back(
             currentAircraft); // add to struct pointer vector
 
-        //					std::cout << "computing new
-        // predictions for plane " << currentAircraft->id << "\n";
         trajectoryPrediction *currentPrediction = new trajectoryPrediction();
 
         currentPrediction->id = currentAircraft->id;
@@ -779,9 +608,6 @@ bool ComputerSystem::readAirspace() {
             outOfBounds = true;
           }
           if (outOfBounds) {
-            //							std::cout
-            //<< "reached end of plane " << currentPrediction->id << "
-            // predictions\n";
             break;
           }
         }
@@ -803,10 +629,6 @@ bool ComputerSystem::readAirspace() {
     }
     // found next data field in current plane
     else if (readChar == ',') {
-      //				std::cout << "found next plane field
-      // data:
-      //"
-      //<< readBuffer << "\n";
       switch (j) {
       // add whichever character the index j has arrived to
       case 0:
@@ -852,41 +674,20 @@ bool ComputerSystem::readAirspace() {
     }
     readBuffer += readChar;
   }
-  //		std::cout << "end read airspace\n";
-  //				std::cout << "remaining planes after read:\n";
-  //				for(aircraft *craft : flyingPlanesInfo){
-  //					std::cout << "plane " << craft->id << ",
-  // keep:
-  //"
-  //<< craft->keep
-  //<< "\n"; 					std::cout << "new values: posx
-  //"<< craft->pos[0]
-  //<<
-  //", posy " << craft->pos[1] << ", posz " << craft->pos[2] << "\n";
-  //				}
   return false;
 }
 
 void ComputerSystem::cleanPredictions() {
-  //		std::cout << "printing predictions\n";
   int j = 0;
   auto itpred = trajectoryPredictions.begin();
   while (itpred != trajectoryPredictions.end()) {
-    //			std::cout << "plane " << (*itpred)->id << "
-    // prediction keep: " << (*itpred)->keep << "\n";
     bool temp = (*itpred)->keep;
 
     // check if plane was terminated
     if (!temp) {
-      //				std::cout << "compsys found plane " <<
-      //(*itpred)->id << " prediction terminated\n";
       delete trajectoryPredictions.at(j);
       itpred = trajectoryPredictions.erase(itpred);
     } else {
-      // print plane prediction info
-
-      //				printf("plane %i predictions:\n",
-      //(*itpred)->id);
       for (int i = (*itpred)->t - 1;
            i < (*itpred)->t + (180 / (currPeriod / 1000000)); i++) {
         int currX = (*itpred)->posX.at(i);
@@ -894,16 +695,8 @@ void ComputerSystem::cleanPredictions() {
         int currZ = (*itpred)->posZ.at(i);
 
         if (currX == -1 || currY == -1 || currZ == -1) {
-          //						std::cout << "reached
-          // end of prediction for plane
-          //"
-          //<<
-          //(*itpred)->id << "\n";
           break;
         }
-
-        //					printf("posx: %i, posy: %i,
-        // posz: %i\n", currX, currY, currZ);
       }
 
       (*itpred)->keep =
@@ -935,19 +728,9 @@ void ComputerSystem::computeViolations(std::ofstream *out) {
         int compZ = (*itNext)->posZ.at(j);
 
         if (currX == -1 || currY == -1 || currZ == -1) {
-          //						std::cout << "reached
-          // end of prediction for plane
-          //"
-          //<<
-          //(*itIndex)->id << "\n";
           break;
         }
         if (compX == -1 || compY == -1 || compZ == -1) {
-          //						std::cout << "reached
-          // end of prediction for plane
-          //"
-          //<<
-          //(*itNext)->id << "\n";
           break;
         }
 
@@ -965,9 +748,6 @@ void ComputerSystem::computeViolations(std::ofstream *out) {
             int commId = atoi((char *)comm);
 
             if (commId == (*itIndex)->id) {
-              //								std::cout
-              //<< "found plane " << (*itIndex)->id << " comm, sending
-              // message\n";
               // find command index in plane shm
               int k = 0;
               char readChar;
@@ -1000,9 +780,6 @@ void ComputerSystem::computeViolations(std::ofstream *out) {
               currComm = true;
             }
             if (commId == (*itNext)->id) {
-              //								std::cout
-              //<< "found plane " << (*itNext)->id << " comm, sending
-              // message\n";
               // find command index in plane shm
               int k = 0;
               char readChar;
@@ -1058,48 +835,29 @@ void ComputerSystem::computeViolations(std::ofstream *out) {
           }
           break;
         }
-        //					std::cout << "incrementing j
-        // counter for prediction compare\n";
         j++;
       }
       ++itNext;
     }
     ++itIndex;
   }
-  //		std::cout << "after compute airspace violations\n";
 }
 
 void ComputerSystem::writeToDisplay() {
-  //		std::cout << "writing to display\n";
 
   std::string displayBuffer = "";
   std::string currentPlaneBuffer = "";
-  //		printf("airspace that was read: %s\n", airspacePtr);
   // print what was found, remove what is no longer in the airspace
   int i = 0;
   auto it = flyingPlanesInfo.begin();
   while (it != flyingPlanesInfo.end()) {
-    //			std::cout << "plane " << (*it)->id << " keep: "
-    //<< (*it)->keep << "\n";
     bool temp = (*it)->keep; // check if plane was terminated
 
     if (!temp) {
-      //				std::cout << "compsys found plane " <<
-      //(*it)->id << " terminated\n";
       delete flyingPlanesInfo.at(i);
       it = flyingPlanesInfo.erase(it);
       numPlanes--;
-      //				std::cout << "computer system number of
-      // planes left: " << numPlanes << "\n";
     } else {
-      // print plane info
-      //				printf("plane %i:\n", (*it)->id);
-      //				printf("posx: %i, posy: %i, posz: %i\n",
-      //(*it)->pos[0], (*it)->pos[1], (*it)->pos[2]);
-      // printf("velx: %i, vely: %i, velz: %i\n", (*it)->vel[0],
-      // (*it)->vel[1],
-      //(*it)->vel[2]);
-
       // add plane to buffer for display
 
       // id,posx,posy,posz,info
@@ -1153,13 +911,9 @@ void ComputerSystem::updatePeriod(int chid) {
   }
 
   if (currPeriod != newPeriod) {
-    //			std::cout << "compsys period changed to: " <<
-    // newPeriod << "\n";
     currPeriod = newPeriod;
     std::string CSPeriod = std::to_string(currPeriod);
     sprintf((char *)periodPtr, CSPeriod.c_str());
     timer->setTimer(currPeriod, currPeriod);
-    //			printf("cs period shm after write: %s\n",
-    // periodPtr);
   }
 }
