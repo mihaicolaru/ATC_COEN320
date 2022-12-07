@@ -26,59 +26,60 @@ class Plane;
 
 class SSR {
 public:
-  SSR(int numberOfPlanes);
-  ~SSR();
-  int start();
-  int stop();
-  static void *startSSR(void *context);
+	SSR(int numberOfPlanes);
+	~SSR();
+	int start();
+	int stop();
+	static void *startSSR(void *context);
 
 private:
-  int initialize(int numberOfPlanes);
-  void *operateSSR(void);
-  void updatePeriod(int chid);
-  bool readFlyingPlanes();
-  bool getPlaneInfo();
-  void writeFlyingPlanes();
+	int initialize(int numberOfPlanes);
+	void *operateSSR(void);
+	void updatePeriod(int chid);
+	bool readFlyingPlanes();
+	bool getPlaneInfo();
+	void writeFlyingPlanes();
 
-  // member parameters
-  // timer object
-  Timer *timer;
+	// member parameters
+	// timer object
+	Timer *timer;
 
-  // current period
-  int currPeriod;
+	// current period
+	int currPeriod;
 
-  // thread members
-  pthread_t SSRthread;
-  pthread_attr_t attr;
-  pthread_mutex_t mutex;
+	// thread members
+	pthread_t SSRthread;
+	pthread_attr_t attr;
+	pthread_mutex_t mutex;
 
-  // timing members
-  time_t at;
-  time_t et;
+	// execution time members
+	time_t startTime;
+	time_t finishTime;
 
-  // list of planes in airspace
-  std::vector<std::string> fileNames;
-  std::vector<void *> planePtrs;
 
-  // list of waiting planes
-  std::vector<std::string> waitingFileNames;
-  std::vector<void *> waitingPtrs;
+	// list of planes in airspace
+	std::vector<std::string> fileNames;
+	std::vector<void *> planePtrs;
 
-  // flying planes list
-  int shm_flyingPlanes;
-  void *flyingPlanesPtr;
-  std::vector<std::string> flyingFileNames;
+	// list of waiting planes
+	std::vector<std::string> waitingFileNames;
+	std::vector<void *> waitingPtrs;
 
-  // airspace shm
-  int shm_airspace;
-  void *airspacePtr;
+	// flying planes list
+	int shm_flyingPlanes;
+	void *flyingPlanesPtr;
+	std::vector<std::string> flyingFileNames;
 
-  // period shm
-  int shm_period;
-  void *periodPtr;
+	// airspace shm
+	int shm_airspace;
+	void *airspacePtr;
 
-  // number of planes left
-  int numPlanes;
+	// period shm
+	int shm_period;
+	void *periodPtr;
+
+	// number of planes left
+	int numPlanes;
 
 };
 
