@@ -29,61 +29,66 @@ class SSR;
 
 class PSR {
 public:
-  PSR(int numberOfPlanes);
-  ~PSR();
-  void start();
-  int stop();
-  static void *startPSR(void *context);
+	PSR(int numberOfPlanes);
+	~PSR();
+	void start();
+	int stop();
+	static void *startPSR(void *context);
 
 private:
-  int initialize(int numberOfPlanes);
-  void *operatePSR(void);
+	int initialize(int numberOfPlanes);
+	void *operatePSR(void);
 
-  // update psr period based on period shm
-  void updatePeriod(int chid);
+	// update psr period based on period shm
+	void updatePeriod(int chid);
 
-  // ================= read waiting planes buffer =================
-  bool readWaitingPlanes();
+	// ================= read waiting planes buffer =================
+	bool readWaitingPlanes();
 
-  // ================= write to flying planes shm =================
-  void writeFlyingPlanes();
+	// ================= write to flying planes shm =================
+	void writeFlyingPlanes();
 
-  // member parameters
-  // timer object
-  Timer *timer;
+	// member parameters
+	// timer object
+	Timer *timer;
 
-  // number of waiting planes left
-  int numWaitingPlanes;
+	// number of waiting planes left
+	int numWaitingPlanes;
 
-  // current period
-  int currPeriod;
+	// current period
+	int currPeriod;
 
-  // thread members
-  pthread_t PSRthread;
-  pthread_attr_t attr;
-  pthread_mutex_t mutex;
+	// thread members
+	pthread_t PSRthread;
+	pthread_attr_t attr;
+	pthread_mutex_t mutex;
 
-  // timing members
-  time_t at;
-  time_t et;
+	// timing members
+	time_t at;
+	time_t et;
 
-  // shm members
-  // waiting planes list
-  int shm_waitingPlanes;
-  void *waitingPlanesPtr;
-  std::vector<std::string> waitingFileNames;
+	// execution time members
+	time_t startTime;
+	time_t finishTime;
 
-  // access waiting planes
-  std::vector<void *> planePtrs;
 
-  // airspace list
-  int shm_flyingPlanes;
-  void *flyingPlanesPtr;
-  std::vector<std::string> flyingFileNames;
+	// shm members
+	// waiting planes list
+	int shm_waitingPlanes;
+	void *waitingPlanesPtr;
+	std::vector<std::string> waitingFileNames;
 
-  // period shm
-  int shm_period;
-  void *periodPtr;
+	// access waiting planes
+	std::vector<void *> planePtrs;
+
+	// airspace list
+	int shm_flyingPlanes;
+	void *flyingPlanesPtr;
+	std::vector<std::string> flyingFileNames;
+
+	// period shm
+	int shm_period;
+	void *periodPtr;
 
 };
 
